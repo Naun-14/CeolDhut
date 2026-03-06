@@ -1,16 +1,27 @@
 from flask import Flask
+from flask_cors import CORS
 from config import Config
-from routes.auth_routes import auth_bp
-from models.user import db
+from flask_bcrypt import Bcrypt
+from models import db
+import os
 
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# connect SQLAlchemy to Flask
-db.init_app(app)
+# Enable CORS with specific settings
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# register routes
+# Initialize database and bcrypt
+db.init_app(app)
+bcrypt = Bcrypt(app)
+
+# Import routes AFTER db initialization
+from routes.auth_routes import auth_bp
+from routes.playlist_routes import playlist_bp
+
+# Register routes
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
+app.register_blueprint(playlist_bp, url_prefix="/api/playlists")
 
 @app.route("/")
 def home():
