@@ -1,11 +1,16 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from config import Config
+from routes.auth_routes import auth_bp
+from models.user import db
 
 app = Flask(__name__)
 app.config.from_object(Config)
 
-db = SQLAlchemy(app)
+# connect SQLAlchemy to Flask
+db.init_app(app)
+
+# register routes
+app.register_blueprint(auth_bp, url_prefix="/api/auth")
 
 @app.route("/")
 def home():
