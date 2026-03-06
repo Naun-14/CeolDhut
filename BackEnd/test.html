@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CeolDhut API Tester</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        .button-group {
+            margin: 20px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .response {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        input {
+            padding: 8px;
+            margin: 5px 0;
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎵 CeolDhut API Tester</h1>
+    
+    <div class="button-group">
+        <h2>Authentication</h2>
+        <label>Email:</label>
+        <input type="email" id="email" value="test@example.com">
+        <label>Password:</label>
+        <input type="password" id="password" value="password123">
+        <button onclick="testRegister()">Register</button>
+        <button onclick="testLogin()">Login</button>
+    </div>
+    
+    <div class="button-group">
+        <h2>Playlists</h2>
+        <label>Playlist Name:</label>
+        <input type="text" id="playlistName" value="My Celtic Music">
+        <button onclick="testCreatePlaylist()">Create Playlist</button>
+        <button onclick="testGetPlaylists()">Get All Playlists</button>
+    </div>
+    
+    <div class="button-group">
+        <h2>Home</h2>
+        <button onclick="testHome()">Test Home Route</button>
+    </div>
+    
+    <div id="response" class="response" style="display: none;">
+        <pre id="responseText"></pre>
+    </div>
+    
+    <script>
+        const API_URL = "http://localhost:5000";
+        let token = null;
+        
+        function getEmail() {
+            return document.getElementById("email").value;
+        }
+        
+        function getPassword() {
+            return document.getElementById("password").value;
+        }
+        
+        function getPlaylistName() {
+            return document.getElementById("playlistName").value;
+        }
+        
+        function showResponse(data, isError = false) {
+            const responseDiv = document.getElementById("response");
+            const responseText = document.getElementById("responseText");
+            responseText.textContent = JSON.stringify(data, null, 2);
+            responseDiv.style.display = "block";
+            
+            if (isError) {
+                responseDiv.className = "response error";
+            } else {
+                responseDiv.className = "response success";
+            }
+        }
+        
+        function testHome() {
+            fetch(`${API_URL}/`)
+                .then(r => r.json())
+                .then(data => {
+                    showResponse(data);
+                })
+                .catch(err => showResponse({error: err.message}, true));
+        }
+        
+        function testRegister() {
+            fetch(`${API_URL}/api/auth/register`, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    email: getEmail(),
+                    password: getPassword()
+                })
+            }).then(r => r.json())
+            .then(data => {
+                showResponse(data);
+            })
+            .catch(err => showResponse({error: err.message}, true));
+        }
+        
+        function testLogin() {
+            fetch(`${API_URL}/api/auth/login`, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    email: getEmail(),
+                    password: getPassword()
+                })
+            }).then(r => r.json())
+            .then(data => {
+                if (data.token) {
+                    token = data.token;
+                    showResponse({...data, message: "✅ Token saved! Use 'Create Playlist' now"});
+                } else {
+                    showResponse(data, true);
+                }
+            })
+            .catch(err => showResponse({error: err.message}, true));
+        }
+        
+        function testCreatePlaylist() {
+            if (!token) {
+                showResponse({error: "❌ Login first to get a token!"}, true);
+                return;
+            }
+            
+            fetch(`${API_URL}/api/playlists`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    name: getPlaylistName()
+                })
+            }).then(r => r.json())
+            .then(data => {
+                showResponse(data);
+            })
+            .catch(err => showResponse({error: err.message}, true));
+        }
+        
+        function testGetPlaylists() {
+            if (!token) {
+                showResponse({error: "❌ Login first to get a token!"}, true);
+                return;
+            }
+            
+            fetch(`${API_URL}/api/playlists`, {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            }).then(r => r.json())
+            .then(data => {
+                showResponse(data);
+            })
+            .catch(err => showResponse({error: err.message}, true));
+        }
+    </script>
+</body>
+</html>
