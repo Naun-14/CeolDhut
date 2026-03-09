@@ -1,4 +1,9 @@
-# Connecting the flask with my local SQL db i created  {Bada Abdulrahman}
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 class Config:
-    SQLALCHEMY_DATABASE_URI = "mysql+pymysql://root:january07W@localhost/ceoldhut"
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'mysql+pymysql://root:january07W@localhost/ceoldhut')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SECRET_KEY = os.getenv('SECRET_KEY', 'ceoldhut key')
