@@ -1,3 +1,4 @@
+
 /* CeòlDhut - Celtic Music Platform Styles */
 
 /* Reset and Base Styles */
@@ -815,7 +816,7 @@ a:hover
     animation: fadeInUp 0.6s ease forwards;
 }
 .logo-img{
-height: 60px;px;
+height: 40px;
 width:auto;
 }
 .hero
@@ -839,3 +840,4 @@ justify-content: center;
 text-align: center;
 color: white;
 }
+
