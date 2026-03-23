@@ -341,12 +341,14 @@ function initSearch()
         const popularityFilter = document.getElementById('popularity-filter');
 
         // Search input handler
+
         searchInput.addEventListener('input', function() 
         {
             filterContent();
         });
 
         // Filter handlers
+
         [genreFilter, regionFilter, popularityFilter].forEach(filter => 
         {
             filter.addEventListener('change', function() 
@@ -456,11 +458,13 @@ function initSearch()
 
 document.querySelectorAll('.region-card').forEach(card => {
 
-    card.addEventListener('click', function() {
+    card.addEventListener('click', function() 
+    {
 
         const title = this.querySelector('h3');
 
-        if (title) {
+        if (title) 
+            {
             const region = title.textContent.toLowerCase();
             alert(`Exploring ${region} music!`);
         }
@@ -474,24 +478,26 @@ document.querySelectorAll('.region-card').forEach(card => {
   {
     const region = this.querySelector('h3').textContent.toLowerCase();
 
-    // In a real app, this would navigate to a region-specific page
+    // Region-specific page
+
     alert(`Exploring ${region} music!`);
 });
 
 
-// Add to playlist functionality
+// Playlist functionality
 
 document.querySelectorAll('.add-btn').forEach(btn => {
 
     btn.addEventListener('click', function() {
 
-        // In a real app, this would add to user's playlist
+        // Add to user's playlist
 
         this.textContent = '✓ Added';
 
         this.style.background = '#4CAF50';
 
-        setTimeout(() => {
+        setTimeout(() => 
+            {
 
             this.textContent = '+ Add';
 
@@ -505,7 +511,7 @@ document.querySelectorAll('.add-btn').forEach(btn => {
 
 
 
-// Keyboard navigation improvements
+// Keyboard navigation
 
 
 
@@ -563,7 +569,7 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor =>
 
 
 
-// Performance optimization: Lazy load images
+// Lazy load images
 
 const images = document.querySelectorAll('img[data-src]');
 
@@ -599,7 +605,7 @@ images.forEach(img => imageObserver.observe(img));
 
 
 
-// Console log for debugging (remove in production)
+// Console log for debugging 
 
 console.log('CeòlDhut Celtic Music Platform loaded successfully!');
 }

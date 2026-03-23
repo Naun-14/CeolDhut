@@ -1,7 +1,7 @@
 
 /* CeòlDhut - Celtic Music Platform Styles */
 
-/* Reset and Base Styles */
+/*  Base Styles */
 * 
 {
     margin: 0;
@@ -775,6 +775,7 @@ a:hover
     cursor: pointer;
     border: none;
 }
+
 /* Focus Styles for Accessibility */
 .nav-link:focus,
 .cta-button:focus,
