@@ -35,5 +35,14 @@ app.register_blueprint(music_bp, url_prefix="/api/music")
 def home():
     return {"message": "CeolDhut API Running"}
 
+
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    return {
+        "status": "ok",
+        "message": "API is running"
+    }, 200
+
+
 if __name__ == "__main__":
     app.run(debug=True)

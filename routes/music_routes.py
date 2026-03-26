@@ -242,13 +242,29 @@ def search_celtic_music():
     except Exception as e:
         return jsonify({"error": f"Celtic music search failed: {str(e)}"}), 500
     # Simple endpoint to get all music
+# This route handles fetching all music tracks
+# Supports optional filters like artist and limit
+
 @music_bp.route('/all', methods=['GET'])
 def get_all_music():
     try:
+        # Get query parameters
+        artist = request.args.get('artist')
+        limit = request.args.get('limit')
+
         return jsonify({
             "status": "success",
-            "message": "Fetched all music tracks",
+            "message": "Fetched music tracks",
+            "filters": {
+                "artist": artist,
+                "limit": limit
+            },
             "data": []
         }), 200
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "status": "error",
+            "message": "Something went wrong while fetching music",
+            "details": str(e)
+        }), 500
