@@ -10,19 +10,26 @@ bcrypt = Bcrypt()
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'ceoldhut key')
 
+
 @auth_bp.route("/register", methods=["POST"])
 def register():
     """Register a new user"""
-    
+
     data = request.json
+
+    # Input validation
+    if not data or not data.get("email") or not data.get("password"):
+        return jsonify({
+            "status": "error",
+            "message": "Email and password are required"
+        }), 400
+
     email = data.get("email")
     password = data.get("password")
 
-    if not email or not password:
-        return jsonify({"error": "Missing email or password"}), 400
-
     # Check if user already exists
     existing_user = User.query.filter_by(email=email).first()
+
     if existing_user:
         return jsonify({"error": "Email already registered"}), 400
 
@@ -44,13 +51,15 @@ def register():
 @auth_bp.route("/login", methods=["POST"])
 def login():
     """Log in a user and return JWT token"""
-    
+
     data = request.json
+
+    # Input validation
+    if not data or not data.get("email") or not data.get("password"):
+        return jsonify({"error": "Missing email or password"}), 400
+
     email = data.get("email")
     password = data.get("password")
-
-    if not email or not password:
-        return jsonify({"error": "Missing email or password"}), 400
 
     # Find user by email
     user = User.query.filter_by(email=email).first()
