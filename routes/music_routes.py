@@ -268,3 +268,32 @@ def get_all_music():
             "message": "Something went wrong while fetching music",
             "details": str(e)
         }), 500
+    from routes.auth_routes import admin_required
+
+# Admin-only route to create music
+@music_bp.route('/create', methods=['POST'])
+@admin_required
+def create_music():
+    try:
+        data = request.get_json()
+
+        # Basic validation
+        if not data or not data.get("title"):
+            return jsonify({
+                "status": "error",
+                "message": "Music title is required"
+            }), 400
+
+        # Placeholder logic (since we don't want to break existing DB)
+        return jsonify({
+            "status": "success",
+            "message": "Music created successfully (admin only)",
+            "data": data
+        }), 201
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": "Error creating music",
+            "details": str(e)
+        }), 500

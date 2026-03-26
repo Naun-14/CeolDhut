@@ -9,7 +9,32 @@ auth_bp = Blueprint("auth", __name__)
 bcrypt = Bcrypt()
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'ceoldhut key')
+from functools import wraps
 
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+
+        if 'Authorization' in request.headers:
+            token = request.headers['Authorization']
+
+        if not token:
+            return jsonify({"error": "Token is missing"}), 401
+
+        try:
+            data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+            user_role = data.get("role")
+
+            if user_role != "ADMIN":
+                return jsonify({"error": "Admin access required"}), 403
+
+        except Exception:
+            return jsonify({"error": "Invalid token"}), 401
+
+        return f(*args, **kwargs)
+
+    return decorated
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
