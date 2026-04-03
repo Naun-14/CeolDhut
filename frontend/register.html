@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>CeolDhutRegister</title>
+        <link rel="stylesheet" href="styles.css" />  
+  
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+        footer {
+            margin-top: auto;
+        }
+        h1 {
+            font-family: 'Crimson Text', serif;
+            font-weight: 600;
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            color: #d4af37;
+        }
+
+        .login-register-container {
+            width: 100%; 
+            max-width: 500px;         
+            margin: 50px auto;         
+            padding: 25px 30px;
+            background: rgba(11, 61, 46, 0.9); 
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            color: #fff;
+            font-family: 'Crimson Text', serif; margin-top: 100px;
+                    
+        }
+
+        /*Screen*/
+        .screen{
+            display:none;
+            /*opacity: 0;*/
+        }
+        .screen.active{
+            display: block;
+            /*opacity: 1;*/
+        }
+
+        /*Register*/
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: bold;
+        }
+        input {
+            border: 2px solid #f0f0f0;
+            border-radius: 4px;
+            display: block;
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #3498db
+        }
+        small {
+            visibility: hidden;
+            position: absolute;
+            bottom: -18px;
+            left: 0;
+            font-size: 12px;
+        }
+
+        /*buttons*/
+        .register-btn{
+            width: 100%;
+            padding: 12px 0;
+            background: #d4af37;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            color: #0b3d2e;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .register-btn:hover {
+            border:2px solid #d4af37;
+        }
+        .login-btn{
+            width: 100%;
+            padding: 12px 0;
+            background: #d4af37;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            color: #0b3d2e;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .login-btn:hover{
+            border:2px solid #d4af37;
+        }
+        .go-register-btn {
+            width: 50%;
+            padding: 12px 0;
+            background: #d4af37;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            color: #0b3d2e;
+            font-size: 0.7em;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .go-regsiter-btn:hover{
+            border-bottom:1px solid #d4af37;
+        }
+
+        /*Validation States*/
+        .form-group.error input {
+        border-color: #e74c3c;
+        }
+        .form-group.success input {
+        border-color: #5be73c;
+        }
+        .form-group.error small {
+            visibility: visible;
+            color: #e74c3c
+        }
+   
+    </style>
+    </head>
+    <body>
+        <!--Navigation Bar Start -->
+        <nav class="navbar" id="navbar">    
+        <div class="nav-container">
+
+            <!-- Website Logo -->
+            <div class="logo">
+                <a href="index.html">
+                    <img src="https://i.ibb.co/N6QMp4RY/logo-png.png" alt="CeolDhut " class="logo-img">
+                </a>
+            </div>
+
+            <!-- Navigation Menu -->
+            <ul class="nav-menu" id="nav-menu">
+                <li><a href="#" class="nav-link">Home</a></li>
+                <li><a href="#" class="nav-link">Music</a></li>
+                <li><a href="#" class="nav-link">Events</a></li>
+                <li><a href="#" class="nav-link">Artists</a></li>
+                <li><a href="#" class="nav-link">Playlists</a></li>
+                <li><a href="#" class="nav-link active">My Account</a></li>
+            </ul>
+        </div>
+        </nav>
+
+        <!-- =========================
+            Navigation Bar End
+        ========================= -->
+
+        <!--The Login/Register screens-->
+        <div class="login-register-container">
+        
+        <!--Login-->
+        <div id="login-screen" class="screen active">
+            <form id="login-form">
+                <h1>Login</h1>
+                
+                <!--Email-->
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" placeholder="Enter email"/>
+                    <small>email is required</small>
+                </div>
+
+                <!--Password-->
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter password"/>
+                    <small>password is required</small>
+                </div>
+                
+                <!--Submit Button-->
+                <p><button class="login-btn" type="submit">Login</button></p>
+
+                <!--Got to register button-->
+                <p><button id="go-register-btn" class="go-register-btn">Not registered yet</button></p>
+            
+            </form>
+        </div>
+        
+        <!--Registration form-->
+        <div id="registration-screen" class="screen">
+            <form id="registration-form">
+                <h1>Register</h1>
+
+                <!--Email-->
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="new-email" placeholder="Enter email"/>
+                    <small>email is required</small>
+                </div>
+
+                <!--Password-->
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="new-password" placeholder="Enter password"/>
+                    <small>password is required</small>
+                </div>
+
+                <!--Confirm Password-->
+                <div class="form-group">
+                    <label for="confirmpassword">Confirm Password</label>
+                    <input type="password" id="confirmpassword" placeholder="Confrim Password"/>
+                    <small>password is required</small>
+                </div>
+                <!--Submit Button-->
+                <button class="register-btn" type="submit">Register</button>
+            </form>
+        </div>
+    </div>
+
+    <footer class="py-2 d-flex align-items-center mt-auto" style="background-color:rgba(11, 61, 46, 0.95);">
+    <div class="container d-flex justify-content-center w-100">
+        
+       <p class="mb-0 d-none d-sm-block align-self-center">© 2026 Ceol Dhut</p>
+    </div>
+    </footer>
+    
+        
+    <script src="register.js"></script>
+    </body>
+</html>
