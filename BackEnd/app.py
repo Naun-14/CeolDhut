@@ -1,21 +1,28 @@
-from flask import Flask
-from flask_cors import CORS
+from flask import Flask, send_from_directory
 from config import Config
 from flask_bcrypt import Bcrypt
 from models import db
 import os
 
-app = Flask(__name__)
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+DEFAULT_FRONTEND_DIR = os.path.join(PROJECT_ROOT, "ceoldhut-frontend")
+LEGACY_FRONTEND_DIR = os.path.join(PROJECT_ROOT, "frontend")
+FRONTEND_DIR = DEFAULT_FRONTEND_DIR if os.path.isdir(DEFAULT_FRONTEND_DIR) else LEGACY_FRONTEND_DIR
+
+app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path="")
 app.config.from_object(Config)
 
-# Enable CORS
-CORS(app)
-
-# Initialize database and bcrypt
 db.init_app(app)
 bcrypt = Bcrypt(app)
 
-# Import routes AFTER db initialization
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    return response
+
 from routes.auth_routes import auth_bp
 from routes.playlist_routes import playlist_bp
 from routes.tracks_routes import tracks_bp
@@ -23,7 +30,6 @@ from routes.events_routes import events_bp
 from routes.artists_routes import artists_bp
 from routes.music_routes import music_bp
 
-# Register all blueprints
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
 app.register_blueprint(playlist_bp, url_prefix="/api/playlists")
 app.register_blueprint(tracks_bp, url_prefix="/api/tracks")
@@ -33,7 +39,42 @@ app.register_blueprint(music_bp, url_prefix="/api/music")
 
 @app.route("/")
 def home():
-    return {"message": "CeolDhut API Running"}
+    return send_from_directory(FRONTEND_DIR, "index.html")
+
+
+@app.route("/client")
+def client_app():
+    return send_from_directory(FRONTEND_DIR, "index.html")
+
+
+@app.route("/admin")
+def admin_app():
+    return send_from_directory(FRONTEND_DIR, "admin.html")
+
+
+@app.route("/login")
+def login_page():
+    return send_from_directory(FRONTEND_DIR, "login.html")
+
+
+@app.route("/account")
+def account_page():
+    return send_from_directory(FRONTEND_DIR, "account.html")
+
+
+@app.route("/music")
+def music_page():
+    return send_from_directory(FRONTEND_DIR, "music.html")
+
+
+@app.route("/artists")
+def artists_page():
+    return send_from_directory(FRONTEND_DIR, "artists.html")
+
+
+@app.route("/events")
+def events_page():
+    return send_from_directory(FRONTEND_DIR, "events.html")
 
 
 @app.route('/api/health', methods=['GET'])

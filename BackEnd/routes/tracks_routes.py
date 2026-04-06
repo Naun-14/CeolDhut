@@ -141,8 +141,6 @@ def remove_track_from_playlist(playlist_id, track_id):
 
 @tracks_bp.route("", methods=["POST"])
 def create_track():
-    """Create a new track (Admin only)"""
-    
     token = request.headers.get('Authorization')
     if not token:
         return jsonify({"error": "Missing token"}), 401
@@ -153,13 +151,7 @@ def create_track():
     user_id = verify_token(token)
     if not user_id:
         return jsonify({"error": "Invalid token"}), 401
-    
-    # Check if user is admin
-    from models import User
-    user = User.query.filter_by(id=user_id).first()
-    if not user or user.role != 'ADMIN':
-        return jsonify({"error": "Admin access required"}), 403
-    
+
     data = request.json
     title = data.get("title")
     artist_id = data.get("artist_id")
@@ -168,6 +160,19 @@ def create_track():
     
     if not title:
         return jsonify({"error": "Title required"}), 400
+
+    existing_track = None
+    if spotify_id:
+        existing_track = Track.query.filter_by(spotify_id=spotify_id).first()
+    elif title and artist_id:
+        existing_track = Track.query.filter_by(title=title, artist_id=artist_id).first()
+
+    if existing_track:
+        return jsonify({
+            "message": "Track already exists",
+            "id": existing_track.id,
+            "title": existing_track.title
+        }), 200
     
     track = Track(
         title=title,

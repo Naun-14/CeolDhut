@@ -42,7 +42,6 @@ def register():
 
     data = request.json
 
-    # Input validation
     if not data or not data.get("email") or not data.get("password"):
         return jsonify({
             "status": "error",
@@ -51,20 +50,22 @@ def register():
 
     email = data.get("email")
     password = data.get("password")
+    role = data.get("role", "USER")
 
-    # Check if user already exists
+    if role not in {"USER", "ADMIN"}:
+        role = "USER"
+
     existing_user = User.query.filter_by(email=email).first()
 
     if existing_user:
         return jsonify({"error": "Email already registered"}), 400
 
-    # Hash password
     password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
 
-    # Create user
     new_user = User(
         email=email,
-        password_hash=password_hash
+        password_hash=password_hash,
+        role=role
     )
 
     db.session.add(new_user)
@@ -79,24 +80,20 @@ def login():
 
     data = request.json
 
-    # Input validation
     if not data or not data.get("email") or not data.get("password"):
         return jsonify({"error": "Missing email or password"}), 400
 
     email = data.get("email")
     password = data.get("password")
 
-    # Find user by email
     user = User.query.filter_by(email=email).first()
 
     if not user:
         return jsonify({"error": "Invalid email or password"}), 401
 
-    # Check password
     if not bcrypt.check_password_hash(user.password_hash, password):
         return jsonify({"error": "Invalid email or password"}), 401
 
-    # Create JWT token (expires in 24 hours)
     payload = {
         'user_id': user.id,
         'email': user.email,

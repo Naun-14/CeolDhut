@@ -1,13 +1,40 @@
 from flask import Blueprint, request, jsonify
-import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials
 import os
 
 music_bp = Blueprint("music", __name__)
 
-# Initialize Spotify client
+
+def clear_invalid_proxy_settings():
+    proxy_keys = [
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "ALL_PROXY",
+        "http_proxy",
+        "https_proxy",
+        "all_proxy",
+        "GIT_HTTP_PROXY",
+        "GIT_HTTPS_PROXY",
+    ]
+    for key in proxy_keys:
+        value = os.getenv(key)
+        if value and "127.0.0.1:9" in value:
+            os.environ.pop(key, None)
+
+
+def load_spotify():
+    try:
+        import spotipy
+        from spotipy.oauth2 import SpotifyClientCredentials
+        return spotipy, SpotifyClientCredentials
+    except ImportError:
+        return None, None
+
 def get_spotify_client():
-    """Create and return a Spotify client"""
+    clear_invalid_proxy_settings()
+    spotipy, SpotifyClientCredentials = load_spotify()
+    if not spotipy or not SpotifyClientCredentials:
+        return None
+
     client_id = os.getenv('SPOTIFY_CLIENT_ID')
     client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
     
@@ -47,8 +74,8 @@ def search_music():
     if not query:
         return jsonify({"error": "Search query required (q parameter)"}), 400
     
-    if limit > 50:
-        limit = 50
+    if limit > 10:
+        limit = 10
     if limit < 1:
         limit = 1
     
@@ -127,15 +154,10 @@ def search_music():
 
 @music_bp.route("/artist/<artist_id>", methods=["GET"])
 def get_artist_details(artist_id):
-    """
-    Get detailed information about a Spotify artist
-    
-    Example: GET /api/music/artist/4dpARuHksKMDHmCMr5PQJ4
-    """
-    
+    spotipy, _ = load_spotify()
     sp = get_spotify_client()
     if not sp:
-        return jsonify({"error": "Spotify credentials not configured"}), 500
+        return jsonify({"error": "Spotify integration not configured"}), 500
     
     try:
         artist = sp.artist(artist_id)
@@ -159,15 +181,10 @@ def get_artist_details(artist_id):
 
 @music_bp.route("/track/<track_id>", methods=["GET"])
 def get_track_details(track_id):
-    """
-    Get detailed information about a Spotify track
-    
-    Example: GET /api/music/track/11dFghVXANMlKmJXsNCQvb
-    """
-    
+    spotipy, _ = load_spotify()
     sp = get_spotify_client()
     if not sp:
-        return jsonify({"error": "Spotify credentials not configured"}), 500
+        return jsonify({"error": "Spotify integration not configured"}), 500
     
     try:
         track = sp.track(track_id)
@@ -207,8 +224,8 @@ def search_celtic_music():
     
     limit = request.args.get('limit', 20, type=int)
     
-    if limit > 50:
-        limit = 50
+    if limit > 10:
+        limit = 10
     if limit < 1:
         limit = 1
     
@@ -222,16 +239,16 @@ def search_celtic_music():
         
         tracks = []
         for track in results['tracks']['items']:
-            tracks.append({
-                'id': track['id'],
-                'name': track['name'],
-                'artist': track['artists'][0]['name'] if track['artists'] else 'Unknown',
-                'album': track['album']['name'],
-                'duration_ms': track['duration_ms'],
-                'popularity': track['popularity'],
-                'spotify_url': track['external_urls']['spotify'],
-                'image': track['album']['images'][0]['url'] if track['album']['images'] else None
-            })
+                tracks.append({
+                    'id': track['id'],
+                    'name': track['name'],
+                    'artist': track['artists'][0]['name'] if track['artists'] else 'Unknown',
+                    'album': track['album']['name'],
+                    'duration_ms': track['duration_ms'],
+                    'popularity': track.get('popularity', 0),
+                    'spotify_url': track['external_urls']['spotify'],
+                    'image': track['album']['images'][0]['url'] if track['album']['images'] else None
+                })
         
         return jsonify({
             "type": "Celtic Music",
