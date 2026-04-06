@@ -35,24 +35,6 @@ Run locally:
 python BackEnd/app.py
 ```
 
-## Production Start Command
-
-Use Gunicorn from the `BackEnd` folder:
-
-```bash
-gunicorn --chdir BackEnd wsgi:app
-```
-
-## Suggested Deployment Order
-
-1. Put the code in GitHub.
-2. Create a hosted MySQL database.
-3. Add the environment variables in your hosting platform.
-4. Deploy the Flask app with:
-
-```bash
-gunicorn --chdir BackEnd wsgi:app
-```
 
 ## Main Routes
 
