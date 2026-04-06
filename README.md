@@ -178,13 +178,4 @@ Two forms of API documentation are included:
 
 A structured usability review for the current UI and core user flows is documented in [USABILITY_REVIEW.md](/C:/Users/abdul/Documents/CeolDhut/docs/USABILITY_REVIEW.md).
 
-## Recommended Submission Bundle
 
-For coursework submission, include:
-
-- GitHub repository link
-- deployed application link
-- README link
-- video demo link
-- API documentation link
-- any supporting usability/testing documents
