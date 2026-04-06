@@ -5,7 +5,7 @@
 
 const API_BASE = (() => {
   const origin = window.location.origin;
-  if (origin.includes('127.0.0.1:5000') || origin.includes('localhost:5000')) {
+  if (origin.startsWith('http://') || origin.startsWith('https://')) {
     return '/api';
   }
   return 'http://127.0.0.1:5000/api';
