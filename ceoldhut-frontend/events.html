@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Events — CeòlDhut</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .events-hero {
+      background: linear-gradient(160deg, var(--bg-2) 0%, var(--bg) 100%);
+      border-bottom: 1px solid var(--border);
+      padding: calc(var(--nav-h) + 40px) 0 40px;
+    }
+    .events-hero h1 { margin-bottom: 12px; }
+    .events-hero p { color: var(--text-muted); max-width: 500px; margin-bottom: 28px; }
+    .event-detail-row { display: flex; gap: 8px; align-items: center; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; }
+    .register-btn-ev {
+      width: 100%;
+      padding: 10px;
+      border-radius: var(--radius-pill);
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: var(--transition);
+    }
+    .register-btn-ev.registered {
+      background: rgba(39,174,96,0.15);
+      border: 1px solid rgba(39,174,96,0.3);
+      color: #5ae088;
+    }
+    .register-btn-ev:not(.registered) {
+      background: var(--gold);
+      color: var(--bg);
+    }
+    .register-btn-ev:not(.registered):hover { background: #e8c444; }
+    .get-in-touch {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+
+<div id="navbar-placeholder"></div>
+
+<!-- Events Hero -->
+<div class="events-hero">
+  <div class="container">
+    <div class="hero-eyebrow">Celtic Gatherings</div>
+    <h1>Upcoming Events</h1>
+    <p>Discover Celtic music festivals, concerts and cultural gatherings across the Celtic nations and beyond.</p>
+    <div class="search-wrapper" style="max-width:480px">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" id="search-input" placeholder="Search events by name or location…">
+    </div>
+  </div>
+</div>
+
+<div class="page-content" style="padding-top:32px">
+  <div class="container">
+
+    <!-- Filter bar -->
+    <div class="filter-bar" style="margin-bottom:32px" id="filter-bar">
+      <button class="filter-pill active" data-region="">All Events</button>
+      <button class="filter-pill" data-region="Scotland">Scotland</button>
+      <button class="filter-pill" data-region="Ireland">Ireland</button>
+      <button class="filter-pill" data-region="Wales">Wales</button>
+      <button class="filter-pill" data-region="Brittany">Brittany</button>
+      <button class="filter-pill" data-region="Cornwall">Cornwall</button>
+      <button class="filter-pill" data-region="Isle of Man">Isle of Man</button>
+      <button class="filter-pill" data-region="liked">❤ Liked</button>
+    </div>
+
+    <!-- Results count -->
+    <div style="margin-bottom:20px;color:var(--text-muted);font-size:0.875rem" id="results-count"></div>
+
+    <!-- Event grid -->
+    <div class="event-grid" id="event-grid">
+      <!-- skeleton -->
+      ${Array(6).fill(0).map(() => `<div class="skeleton" style="height:300px;border-radius:20px"></div>`).join('')}
+    </div>
+
+    <!-- Empty state -->
+    <div id="empty-state" style="display:none" class="empty-state">
+      <div class="empty-state-icon">📅</div>
+      <p class="empty-state-title">No events found</p>
+      <p class="empty-state-sub">Try a different filter or check back soon</p>
+    </div>
+
+    <!-- Divider -->
+    <div style="border-top:1px solid var(--border);margin:56px 0"></div>
+
+    <!-- Get in touch -->
+    <div class="get-in-touch">
+      <h2 style="margin-bottom:8px">Know of an event?</h2>
+      <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:24px">Running or know of a Celtic music event not listed? Let us know.</p>
+      <div id="contact-msg"></div>
+      <div class="form-group">
+        <label class="form-label">Name / Organisation</label>
+        <input class="form-input" id="contact-name" placeholder="Your name or organisation">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="contact-email" placeholder="your@email.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Event Details</label>
+        <input class="form-input" id="contact-details" placeholder="Event name, date, location…">
+      </div>
+      <button class="form-submit" onclick="submitContact()">Send Message</button>
+    </div>
+
+    <div style="height:32px"></div>
+
+  </div>
+</div>
+
+<!-- Event Detail Modal -->
+<div class="modal-overlay" id="event-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-title"></h3>
+      <button class="modal-close" data-modal-close>✕</button>
+    </div>
+    <div class="event-detail-row"><span>📅</span><span id="modal-date"></span></div>
+    <div class="event-detail-row"><span>📍</span><span id="modal-location"></span></div>
+    <p id="modal-description" style="color:var(--text-muted);font-size:0.9rem;margin:16px 0;line-height:1.7"></p>
+    <button class="register-btn-ev" id="modal-register-btn"></button>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/components.js"></script>
+<script>
+let allEvents = [];
+let likedEvents = JSON.parse(localStorage.getItem('ceol_liked_events') || '[]');
+let activeRegion = '';
+let registrations = new Set();
+
+document.addEventListener('DOMContentLoaded', async () => {
+  injectSharedComponents('events');
+  await loadEvents();
+  loadRegistrations();
+
+  // Filters
+  document.querySelectorAll('.filter-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      activeRegion = pill.dataset.region;
+      renderEvents();
+    });
+  });
+
+  // Search
+  const searchInput = document.getElementById('search-input');
+  searchInput?.addEventListener('input', () => renderEvents(searchInput.value));
+});
+
+async function loadEvents() {
+  try {
+    const data = await Api.get('/events');
+    allEvents = data.events || [];
+    renderEvents();
+  } catch(e) {
+    document.getElementById('event-grid').innerHTML = '';
+    document.getElementById('empty-state').style.display = 'block';
+    document.getElementById('empty-state').querySelector('.empty-state-sub').textContent = 'Could not connect to backend.';
+  }
+}
+
+async function loadRegistrations() {
+  if (!Auth.isLoggedIn()) return;
+  // We don't have a "my registrations" endpoint, track locally
+  const stored = JSON.parse(localStorage.getItem('ceol_registrations') || '[]');
+  stored.forEach(id => registrations.add(id));
+}
+
+function renderEvents(search = '') {
+  const searchTerm = (search || document.getElementById('search-input')?.value || '').toLowerCase();
+  let filtered = allEvents;
+
+  if (activeRegion === 'liked') {
+    filtered = filtered.filter(e => likedEvents.includes(e.id));
+  } else if (activeRegion) {
+    filtered = filtered.filter(e => (e.location || '').toLowerCase().includes(activeRegion.toLowerCase()));
+  }
+
+  if (searchTerm) {
+    filtered = filtered.filter(e =>
+      e.title.toLowerCase().includes(searchTerm) ||
+      (e.location || '').toLowerCase().includes(searchTerm)
+    );
+  }
+
+  const grid = document.getElementById('event-grid');
+  const empty = document.getElementById('empty-state');
+  const count = document.getElementById('results-count');
+  count.textContent = `${filtered.length} event${filtered.length !== 1 ? 's' : ''}`;
+
+  if (!filtered.length) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  grid.innerHTML = filtered.map(e => renderEventCard(e)).join('');
+}
+
+function renderEventCard(e) {
+  const date = e.event_date
+    ? new Date(e.event_date).toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'long', year:'numeric' })
+    : 'Date TBC';
+  const isLiked = likedEvents.includes(e.id);
+  const flags = { Scotland:'🏴󠁧󠁢󠁳󠁣󠁴󠁿', Ireland:'🇮🇪', Wales:'🏴󠁧󠁢󠁷󠁬󠁳󠁿', Brittany:'⚓', Cornwall:'🌊', 'Isle of Man':'🐟' };
+  const flag = Object.entries(flags).find(([k]) => (e.location||'').includes(k))?.[1] || '🎵';
+
+  return `
+    <div class="event-card" onclick="openEventModal(${e.id})">
+      <div class="event-card-img" style="font-size:4rem">${flag}</div>
+      <div class="event-card-body">
+        <div class="event-card-date">${date}</div>
+        <div class="event-card-title">${esc(e.title)}</div>
+        <div class="event-card-location">📍 ${esc(e.location || 'Location TBC')}</div>
+        <div class="event-card-actions" style="display:flex;justify-content:space-between;align-items:center">
+          <span class="event-tag">Celtic Event</span>
+          <button
+            style="background:none;border:none;font-size:1.3rem;color:${isLiked ? '#d4af37' : 'var(--text-dim)'};cursor:pointer"
+            onclick="event.stopPropagation();toggleLike(${e.id}, this)"
+            title="${isLiked ? 'Unlike' : 'Like'}"
+          >${isLiked ? '★' : '☆'}</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function openEventModal(id) {
+  const e = allEvents.find(ev => ev.id === id);
+  if (!e) return;
+  const date = e.event_date
+    ? new Date(e.event_date).toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' })
+    : 'Date TBC';
+  document.getElementById('modal-title').textContent = e.title;
+  document.getElementById('modal-date').textContent = date;
+  document.getElementById('modal-location').textContent = e.location || 'Location TBC';
+  document.getElementById('modal-description').textContent = e.description || 'No description available.';
+  const btn = document.getElementById('modal-register-btn');
+  const isReg = registrations.has(id);
+  btn.textContent = isReg ? '✓ Registered' : 'Register Interest';
+  btn.className = 'register-btn-ev' + (isReg ? ' registered' : '');
+  btn.onclick = () => registerForEvent(id, btn);
+  openModal('event-modal');
+}
+
+async function registerForEvent(id, btn) {
+  if (!Auth.isLoggedIn()) {
+    Toast.error('Please login to register for events');
+    setTimeout(() => window.location.href = 'login.html', 1000);
+    return;
+  }
+  if (registrations.has(id)) {
+    // Unregister
+    const data = await Api.del(`/events/${id}/register`);
+    if (data.message) {
+      registrations.delete(id);
+      saveRegistrations();
+      btn.textContent = 'Register Interest';
+      btn.classList.remove('registered');
+      Toast.info('Unregistered from event');
+    } else Toast.error(data.error || 'Failed to unregister');
+  } else {
+    const data = await Api.post(`/events/${id}/register`, {});
+    if (data.message) {
+      registrations.add(id);
+      saveRegistrations();
+      btn.textContent = '✓ Registered';
+      btn.classList.add('registered');
+      Toast.success('Registered for event!');
+    } else Toast.error(data.error || 'Failed to register');
+  }
+}
+
+function toggleLike(id, btn) {
+  const idx = likedEvents.indexOf(id);
+  if (idx === -1) {
+    likedEvents.push(id);
+    btn.textContent = '★';
+    btn.style.color = '#d4af37';
+  } else {
+    likedEvents.splice(idx, 1);
+    btn.textContent = '☆';
+    btn.style.color = 'var(--text-dim)';
+  }
+  localStorage.setItem('ceol_liked_events', JSON.stringify(likedEvents));
+  if (activeRegion === 'liked') renderEvents();
+}
+
+function saveRegistrations() {
+  localStorage.setItem('ceol_registrations', JSON.stringify([...registrations]));
+}
+
+function submitContact() {
+  const name = document.getElementById('contact-name').value.trim();
+  const email = document.getElementById('contact-email').value.trim();
+  const details = document.getElementById('contact-details').value.trim();
+  const msg = document.getElementById('contact-msg');
+  if (!name || !email || !details) {
+    msg.innerHTML = '<div class="form-msg error">Please fill in all fields.</div>';
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    msg.innerHTML = '<div class="form-msg error">Please enter a valid email.</div>';
+    return;
+  }
+  msg.innerHTML = '<div class="form-msg success">Thanks! We\'ll be in touch soon.</div>';
+  document.getElementById('contact-name').value = '';
+  document.getElementById('contact-email').value = '';
+  document.getElementById('contact-details').value = '';
+}
+
+function esc(s) { return String(s || '').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>

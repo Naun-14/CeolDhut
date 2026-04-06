@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — CeòlDhut</title>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<!-- Admin Sidebar -->
+<div class="admin-sidebar">
+  <div class="admin-sidebar-logo">
+    <div class="admin-sidebar-logo-text">CeòlDhut</div>
+    <div class="admin-sidebar-logo-sub">Admin Dashboard</div>
+  </div>
+  <nav>
+    <div class="admin-nav-item active" onclick="showSection('overview')" id="nav-overview">
+      <span class="admin-nav-icon">📊</span> Overview
+    </div>
+    <div class="admin-nav-item" onclick="showSection('events')" id="nav-events">
+      <span class="admin-nav-icon">📅</span> Events
+    </div>
+    <div class="admin-nav-item" onclick="showSection('artists')" id="nav-artists">
+      <span class="admin-nav-icon">🎤</span> Artists
+    </div>
+    <div class="admin-nav-item" onclick="showSection('tracks')" id="nav-tracks">
+      <span class="admin-nav-icon">🎵</span> Tracks
+    </div>
+    <div style="margin-top:auto;padding:24px 0 0">
+      <div class="admin-nav-item" onclick="window.location.href='index.html'">
+        <span class="admin-nav-icon">🏠</span> View Site
+      </div>
+      <div class="admin-nav-item" onclick="Auth.logout()">
+        <span class="admin-nav-icon">🚪</span> Logout
+      </div>
+    </div>
+  </nav>
+</div>
+
+<!-- Main -->
+<div class="admin-main">
+
+  <!-- ── OVERVIEW ─────────────────────────────────────── -->
+  <section id="section-overview">
+    <div class="admin-header">
+      <div>
+        <h1 class="admin-header-title">Dashboard</h1>
+        <p style="color:var(--text-muted);font-size:0.875rem;margin-top:4px">Welcome back, <span id="admin-email"></span></p>
+      </div>
+      <span style="font-size:0.8rem;color:var(--text-dim)" id="admin-time"></span>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-card-label">Total Events</div>
+        <div class="stat-card-value" id="stat-events">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">All Artists</div>
+        <div class="stat-card-value" id="stat-artists">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Verified Artists</div>
+        <div class="stat-card-value" id="stat-verified">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Tracks in DB</div>
+        <div class="stat-card-value" id="stat-tracks">—</div>
+      </div>
+    </div>
+
+    <!-- Recent Events -->
+    <div class="table-section">
+      <div class="table-section-header">
+        <span class="table-section-title">Recent Events</span>
+        <button class="btn btn-primary btn-sm" onclick="showSection('events')">Manage</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Title</th><th>Location</th><th>Date</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="overview-events-table">
+            <tr><td colspan="4" style="text-align:center;padding:24px"><div class="loading-spinner"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pending Artists -->
+    <div class="table-section">
+      <div class="table-section-header">
+        <span class="table-section-title">Pending Artist Verification</span>
+        <button class="btn btn-primary btn-sm" onclick="showSection('artists')">Manage</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead><tr><th>Name</th><th>Country</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="overview-pending-table">
+            <tr><td colspan="4" style="text-align:center;padding:24px"><div class="loading-spinner"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── EVENTS ─────────────────────────────────────────── -->
+  <section id="section-events" style="display:none">
+    <div class="admin-header">
+      <h1 class="admin-header-title">Events</h1>
+      <button class="btn btn-primary" onclick="openEventForm()">+ Add Event</button>
+    </div>
+    <div class="table-section">
+      <div class="table-section-header">
+        <span class="table-section-title">All Events</span>
+        <input class="search-input" id="events-search" placeholder="Search…" style="width:220px;padding:8px 14px 8px 14px;font-size:0.85rem">
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead><tr><th>Title</th><th>Location</th><th>Date</th><th>Description</th><th>Actions</th></tr></thead>
+          <tbody id="events-table">
+            <tr><td colspan="5" style="text-align:center;padding:24px"><div class="loading-spinner"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ARTISTS ────────────────────────────────────────── -->
+  <section id="section-artists" style="display:none">
+    <div class="admin-header">
+      <h1 class="admin-header-title">Artists</h1>
+      <button class="btn btn-primary" onclick="openArtistForm()">+ Add Artist</button>
+    </div>
+    <div class="table-section">
+      <div class="table-section-header">
+        <span class="table-section-title">All Artists</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead><tr><th>Name</th><th>Country</th><th>Spotify ID</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="artists-table">
+            <tr><td colspan="5" style="text-align:center;padding:24px"><div class="loading-spinner"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── TRACKS ─────────────────────────────────────────── -->
+  <section id="section-tracks" style="display:none">
+    <div class="admin-header">
+      <h1 class="admin-header-title">Tracks</h1>
+      <button class="btn btn-primary" onclick="openTrackForm()">+ Add Track</button>
+    </div>
+    <div class="table-section">
+      <div class="table-section-header">
+        <span class="table-section-title">Tracks in Database</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead><tr><th>Title</th><th>Artist</th><th>Duration</th><th>Spotify ID</th><th>Actions</th></tr></thead>
+          <tbody id="tracks-table">
+            <tr><td colspan="5" style="text-align:center;padding:24px"><div class="loading-spinner"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- Event Form Modal -->
+<div class="modal-overlay" id="event-form-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="event-form-title">Add Event</h3>
+      <button class="modal-close" data-modal-close>✕</button>
+    </div>
+    <input type="hidden" id="event-form-id">
+    <div class="form-group"><label class="form-label">Title *</label><input class="form-input" id="ef-title" placeholder="Event title"></div>
+    <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="ef-location" placeholder="City, Country"></div>
+    <div class="form-group"><label class="form-label">Date</label><input class="form-input" type="datetime-local" id="ef-date"></div>
+    <div class="form-group"><label class="form-label">Description</label><input class="form-input" id="ef-desc" placeholder="Description"></div>
+    <div style="margin-top:8px" id="event-form-msg"></div>
+    <button class="form-submit" style="margin-top:16px" onclick="saveEvent()">Save Event</button>
+  </div>
+</div>
+
+<!-- Artist Form Modal -->
+<div class="modal-overlay" id="artist-form-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="artist-form-title">Add Artist</h3>
+      <button class="modal-close" data-modal-close>✕</button>
+    </div>
+    <input type="hidden" id="artist-form-id">
+    <div class="form-group"><label class="form-label">Name *</label><input class="form-input" id="af-name" placeholder="Artist name"></div>
+    <div class="form-group"><label class="form-label">Country</label><input class="form-input" id="af-country" placeholder="e.g. Scotland"></div>
+    <div class="form-group"><label class="form-label">Spotify ID</label><input class="form-input" id="af-spotify" placeholder="Optional Spotify artist ID"></div>
+    <div style="margin-top:8px" id="artist-form-msg"></div>
+    <button class="form-submit" style="margin-top:16px" onclick="saveArtist()">Save Artist</button>
+  </div>
+</div>
+
+<!-- Track Form Modal -->
+<div class="modal-overlay" id="track-form-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">Add Track</h3>
+      <button class="modal-close" data-modal-close>✕</button>
+    </div>
+    <div class="form-group"><label class="form-label">Title *</label><input class="form-input" id="tf-title" placeholder="Track title"></div>
+    <div class="form-group"><label class="form-label">Artist ID</label><input class="form-input" type="number" id="tf-artist" placeholder="Artist ID from database"></div>
+    <div class="form-group"><label class="form-label">Spotify ID</label><input class="form-input" id="tf-spotify" placeholder="Spotify track ID"></div>
+    <div class="form-group"><label class="form-label">Duration (ms)</label><input class="form-input" type="number" id="tf-duration" placeholder="e.g. 210000"></div>
+    <button class="form-submit" style="margin-top:16px" onclick="saveTrack()">Add Track</button>
+  </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+
+<script src="js/api.js"></script>
+<script>
+// Guard: admin only
+document.addEventListener('DOMContentLoaded', () => {
+  if (!Auth.isLoggedIn()) { window.location.href = 'login.html'; return; }
+  if (!Auth.isAdmin()) { Toast.error('Admin access required'); setTimeout(() => window.location.href = 'index.html', 1500); return; }
+
+  document.getElementById('admin-email').textContent = Auth.user()?.email || '';
+  document.getElementById('admin-time').textContent = new Date().toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  Toast.init();
+  initModals();
+  loadOverview();
+  loadEventsTable();
+  loadArtistsTable();
+  loadTracksTable();
+
+  document.getElementById('events-search')?.addEventListener('input', e => filterEventsTable(e.target.value));
+});
+
+function showSection(name) {
+  ['overview','events','artists','tracks'].forEach(s => {
+    document.getElementById(`section-${s}`).style.display = s === name ? 'block' : 'none';
+    document.getElementById(`nav-${s}`)?.classList.toggle('active', s === name);
+  });
+}
+
+// ── Overview ────────────────────────────────────────────
+async function loadOverview() {
+  try {
+    const [eventsData, artistsData] = await Promise.all([
+      Api.get('/events'),
+      Api.get('/artists')
+    ]);
+    const events = eventsData.events || [];
+    const artists = artistsData.artists || [];
+    const verified = artists.filter(a => a.verified);
+    document.getElementById('stat-events').textContent = events.length;
+    document.getElementById('stat-artists').textContent = artists.length;
+    document.getElementById('stat-verified').textContent = verified.length;
+
+    // Recent events table
+    const evTbody = document.getElementById('overview-events-table');
+    evTbody.innerHTML = events.slice(0,5).map(e => `
+      <tr>
+        <td style="font-weight:500">${esc(e.title)}</td>
+        <td>${esc(e.location||'—')}</td>
+        <td>${e.event_date ? new Date(e.event_date).toLocaleDateString('en-GB') : '—'}</td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="editEvent(${e.id})">Edit</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteEvent(${e.id})">Delete</button>
+        </td>
+      </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:20px">No events yet</td></tr>';
+
+    // Pending artists
+    const pending = artists.filter(a => !a.verified);
+    const arTbody = document.getElementById('overview-pending-table');
+    arTbody.innerHTML = pending.slice(0,5).map(a => `
+      <tr>
+        <td style="font-weight:500">${esc(a.name)}</td>
+        <td>${esc(a.country||'—')}</td>
+        <td><span class="badge badge-pending">Pending</span></td>
+        <td>
+          <button class="btn btn-sm" style="background:var(--gold);color:var(--bg);border-radius:99px;padding:4px 14px;font-size:0.78rem" onclick="verifyArtist(${a.id})">Verify</button>
+        </td>
+      </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:20px">No pending artists</td></tr>';
+  } catch(e) { Toast.error('Failed to load dashboard data'); }
+}
+
+// ── Events ───────────────────────────────────────────────
+let eventsData = [];
+async function loadEventsTable() {
+  try {
+    const data = await Api.get('/events');
+    eventsData = data.events || [];
+    renderEventsTable(eventsData);
+  } catch(e) {}
+}
+
+function renderEventsTable(events) {
+  document.getElementById('events-table').innerHTML = events.map(e => `
+    <tr>
+      <td style="font-weight:500">${esc(e.title)}</td>
+      <td>${esc(e.location||'—')}</td>
+      <td>${e.event_date ? new Date(e.event_date).toLocaleDateString('en-GB') : '—'}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted);font-size:0.85rem">${esc(e.description||'—')}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="editEvent(${e.id})">Edit</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteEvent(${e.id})">Delete</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">No events yet. Add one!</td></tr>';
+}
+
+function filterEventsTable(q) {
+  const filtered = eventsData.filter(e => e.title.toLowerCase().includes(q.toLowerCase()) || (e.location||'').toLowerCase().includes(q.toLowerCase()));
+  renderEventsTable(filtered);
+}
+
+function openEventForm(event) {
+  document.getElementById('event-form-id').value = '';
+  document.getElementById('event-form-title').textContent = 'Add Event';
+  ['ef-title','ef-location','ef-date','ef-desc'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('event-form-msg').innerHTML = '';
+  openModal('event-form-modal');
+}
+
+function editEvent(id) {
+  const e = eventsData.find(ev => ev.id === id);
+  if (!e) return;
+  document.getElementById('event-form-id').value = id;
+  document.getElementById('event-form-title').textContent = 'Edit Event';
+  document.getElementById('ef-title').value = e.title;
+  document.getElementById('ef-location').value = e.location || '';
+  document.getElementById('ef-date').value = e.event_date ? e.event_date.slice(0,16) : '';
+  document.getElementById('ef-desc').value = e.description || '';
+  document.getElementById('event-form-msg').innerHTML = '';
+  openModal('event-form-modal');
+  showSection('events');
+}
+
+async function saveEvent() {
+  const id = document.getElementById('event-form-id').value;
+  const title = document.getElementById('ef-title').value.trim();
+  const location = document.getElementById('ef-location').value.trim();
+  const date = document.getElementById('ef-date').value;
+  const desc = document.getElementById('ef-desc').value.trim();
+  const msgEl = document.getElementById('event-form-msg');
+
+  if (!title) { msgEl.innerHTML = '<div class="form-msg error">Title is required</div>'; return; }
+
+  const body = { title, location, description: desc };
+  if (date) body.event_date = date;
+
+  const data = id ? await Api.put(`/events/${id}`, body) : await Api.post('/events', body);
+  if (data.id || data.message) {
+    Toast.success(id ? 'Event updated!' : 'Event created!');
+    closeModal('event-form-modal');
+    loadEventsTable();
+    loadOverview();
+  } else {
+    msgEl.innerHTML = `<div class="form-msg error">${data.error || 'Failed to save event'}</div>`;
+  }
+}
+
+async function deleteEvent(id) {
+  if (!confirm('Delete this event?')) return;
+  const data = await Api.del(`/events/${id}`);
+  if (data.message) { Toast.success('Event deleted'); loadEventsTable(); loadOverview(); }
+  else Toast.error(data.error || 'Failed to delete');
+}
+
+// ── Artists ───────────────────────────────────────────────
+let artistsDataArr = [];
+async function loadArtistsTable() {
+  try {
+    const data = await Api.get('/artists');
+    artistsDataArr = data.artists || [];
+    document.getElementById('stat-tracks') && (document.getElementById('stat-tracks').textContent = '—');
+    renderArtistsTable();
+  } catch(e) {}
+}
+
+function renderArtistsTable() {
+  document.getElementById('artists-table').innerHTML = artistsDataArr.map(a => `
+    <tr>
+      <td style="font-weight:500">${esc(a.name)}</td>
+      <td>${esc(a.country||'—')}</td>
+      <td style="font-size:0.8rem;color:var(--text-muted)">${esc(a.spotify_id||'—')}</td>
+      <td>${a.verified ? `<span class="badge badge-verified">✓ Verified</span>` : `<span class="badge badge-pending">Pending</span>`}</td>
+      <td>
+        ${!a.verified ? `<button class="btn btn-sm" style="background:var(--gold);color:var(--bg);border-radius:99px;padding:4px 14px;font-size:0.78rem;margin-right:4px" onclick="verifyArtist(${a.id})">Verify</button>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="editArtistModal(${a.id})">Edit</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteArtistRow(${a.id})">Delete</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">No artists yet</td></tr>';
+}
+
+function openArtistForm() {
+  document.getElementById('artist-form-id').value = '';
+  document.getElementById('artist-form-title').textContent = 'Add Artist';
+  ['af-name','af-country','af-spotify'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('artist-form-msg').innerHTML = '';
+  openModal('artist-form-modal');
+}
+
+function editArtistModal(id) {
+  const a = artistsDataArr.find(ar => ar.id === id);
+  if (!a) return;
+  document.getElementById('artist-form-id').value = id;
+  document.getElementById('artist-form-title').textContent = 'Edit Artist';
+  document.getElementById('af-name').value = a.name;
+  document.getElementById('af-country').value = a.country || '';
+  document.getElementById('af-spotify').value = a.spotify_id || '';
+  document.getElementById('artist-form-msg').innerHTML = '';
+  openModal('artist-form-modal');
+}
+
+async function saveArtist() {
+  const id = document.getElementById('artist-form-id').value;
+  const name = document.getElementById('af-name').value.trim();
+  const country = document.getElementById('af-country').value.trim();
+  const spotify_id = document.getElementById('af-spotify').value.trim();
+  const msgEl = document.getElementById('artist-form-msg');
+
+  if (!name) { msgEl.innerHTML = '<div class="form-msg error">Name is required</div>'; return; }
+
+  const body = { name, country, spotify_id: spotify_id || undefined };
+  const data = id ? await Api.put(`/artists/${id}`, body) : await Api.post('/artists', body);
+  if (data.id || data.message) {
+    Toast.success(id ? 'Artist updated!' : 'Artist added!');
+    closeModal('artist-form-modal');
+    loadArtistsTable();
+    loadOverview();
+  } else {
+    msgEl.innerHTML = `<div class="form-msg error">${data.error || 'Failed'}</div>`;
+  }
+}
+
+async function verifyArtist(id) {
+  const data = await Api.put(`/artists/${id}/verify`, {});
+  if (data.verified) { Toast.success('Artist verified!'); loadArtistsTable(); loadOverview(); }
+  else Toast.error(data.error || 'Failed');
+}
+
+async function deleteArtistRow(id) {
+  if (!confirm('Delete this artist?')) return;
+  const data = await Api.del(`/artists/${id}`);
+  if (data.message) { Toast.success('Deleted'); loadArtistsTable(); loadOverview(); }
+  else Toast.error(data.error || 'Failed');
+}
+
+// ── Tracks ────────────────────────────────────────────────
+let tracksData = [];
+async function loadTracksTable() {
+  // We need to get all tracks - no global endpoint so we use artists->tracks approach
+  // For now show placeholder
+  document.getElementById('tracks-table').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">Tracks are added when users save songs to playlists. Use the form to add manually.</td></tr>';
+}
+
+function openTrackForm() { openModal('track-form-modal'); }
+
+async function saveTrack() {
+  const title = document.getElementById('tf-title').value.trim();
+  const artist_id = document.getElementById('tf-artist').value;
+  const spotify_id = document.getElementById('tf-spotify').value.trim();
+  const duration_ms = document.getElementById('tf-duration').value;
+  if (!title) { Toast.error('Title required'); return; }
+  const data = await Api.post('/tracks', {
+    title,
+    artist_id: artist_id ? parseInt(artist_id) : undefined,
+    spotify_id: spotify_id || undefined,
+    duration_ms: duration_ms ? parseInt(duration_ms) : undefined
+  });
+  if (data.id) { Toast.success('Track added!'); closeModal('track-form-modal'); }
+  else Toast.error(data.error || 'Failed to add track');
+}
+
+function esc(s) { return String(s || '').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function openModal(id) { document.getElementById(id)?.classList.add('open'); }
+function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+function initModals() {
+  document.querySelectorAll('[data-modal-close]').forEach(btn => btn.addEventListener('click', () => btn.closest('.modal-overlay')?.classList.remove('open')));
+  document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); }));
+}
+</script>
+</body>
+</html>

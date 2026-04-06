@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Account — CeòlDhut</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .account-header {
+      background: linear-gradient(160deg, var(--bg-2), var(--bg));
+      border-bottom: 1px solid var(--border);
+      padding: calc(var(--nav-h) + 40px) 0 40px;
+    }
+    .account-avatar {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--green), var(--gold-dim));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; margin-bottom: 16px;
+      border: 3px solid var(--border-bright);
+    }
+    .account-tabs { display: flex; gap: 4px; margin-bottom: 32px; border-bottom: 1px solid var(--border); }
+    .account-tab {
+      padding: 12px 20px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: var(--transition);
+      margin-bottom: -1px;
+    }
+    .account-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+    .account-tab:hover { color: var(--text); }
+    .playlist-full-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .playlist-full-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+    .playlist-full-header:hover { background: rgba(255,255,255,0.03); }
+    .playlist-full-name { font-weight: 600; font-size: 0.95rem; }
+    .playlist-full-tracks { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+    .playlist-full-body { display: none; border-top: 1px solid var(--border); }
+    .playlist-full-body.open { display: block; }
+  </style>
+</head>
+<body>
+
+<div id="navbar-placeholder"></div>
+
+<div class="account-header">
+  <div class="container">
+    <div class="account-avatar" id="account-avatar">👤</div>
+    <h1 id="account-name" style="margin-bottom:4px">Account</h1>
+    <p id="account-email" style="color:var(--text-muted);font-size:0.875rem"></p>
+    <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+      <span class="badge" id="account-role-badge" style="padding:5px 14px;font-size:0.8rem"></span>
+      <button class="btn btn-outline btn-sm" onclick="Auth.logout()">Logout</button>
+      <a href="admin.html" id="admin-link" class="btn btn-primary btn-sm" style="display:none">Admin Dashboard →</a>
+    </div>
+  </div>
+</div>
+
+<div class="page-content" style="padding-top:32px">
+  <div class="container" style="max-width:800px">
+
+    <div class="account-tabs">
+      <div class="account-tab active" onclick="showTab('playlists')" id="tab-playlists">My Playlists</div>
+      <div class="account-tab" onclick="showTab('events')" id="tab-events">Registered Events</div>
+    </div>
+
+    <!-- Playlists -->
+    <div id="panel-playlists">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h2 style="font-family:var(--font-serif);font-size:1.2rem">Your Playlists</h2>
+        <button class="btn btn-primary btn-sm" onclick="createPlaylist()">+ New Playlist</button>
+      </div>
+      <div id="playlists-container">
+        <div class="loading-spinner"></div>
+      </div>
+    </div>
+
+    <!-- Events -->
+    <div id="panel-events" style="display:none">
+      <h2 style="font-family:var(--font-serif);font-size:1.2rem;margin-bottom:20px">Registered Events</h2>
+      <div id="events-container">
+        <div class="loading-spinner"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/components.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!Auth.isLoggedIn()) {
+    window.location.href = 'login.html?redirect=account.html';
+    return;
+  }
+  injectSharedComponents('');
+
+  const user = Auth.user();
+  const initials = (user?.email || '?')[0].toUpperCase();
+  document.getElementById('account-avatar').textContent = initials;
+  document.getElementById('account-name').textContent = user?.email?.split('@')[0] || 'User';
+  document.getElementById('account-email').textContent = user?.email || '';
+
+  const roleBadge = document.getElementById('account-role-badge');
+  if (user?.role === 'ADMIN') {
+    roleBadge.textContent = 'Admin';
+    roleBadge.className = 'badge badge-admin';
+    document.getElementById('admin-link').style.display = 'flex';
+  } else {
+    roleBadge.textContent = 'Member';
+    roleBadge.className = 'badge badge-verified';
+  }
+
+  loadPlaylists();
+});
+
+function showTab(tab) {
+  ['playlists','events'].forEach(t => {
+    document.getElementById(`panel-${t}`).style.display = t === tab ? 'block' : 'none';
+    document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+  });
+  if (tab === 'events') loadRegisteredEvents();
+}
+
+async function loadPlaylists() {
+  const el = document.getElementById('playlists-container');
+  try {
+    const data = await Api.get('/playlists');
+    const pls = data.playlists || [];
+    if (!pls.length) {
+      el.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">🎵</div>
+          <p class="empty-state-title">No playlists yet</p>
+          <p class="empty-state-sub">Create your first Celtic playlist</p>
+          <button class="btn btn-primary" style="margin-top:16px" onclick="createPlaylist()">Create Playlist</button>
+        </div>`;
+      return;
+    }
+    el.innerHTML = pls.map(p => `
+      <div class="playlist-full-card">
+        <div class="playlist-full-header" onclick="togglePlaylist(${p.id}, this)">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:48px;height:48px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.5rem">🎵</div>
+            <div>
+              <div class="playlist-full-name">${esc(p.name)}</div>
+              <div class="playlist-full-tracks">Created ${new Date(p.created_at).toLocaleDateString('en-GB')}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();renamePlaylist(${p.id},'${esc(p.name)}')">Rename</button>
+            <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="event.stopPropagation();deletePlaylist(${p.id})">Delete</button>
+            <span style="color:var(--text-dim);font-size:1.2rem">›</span>
+          </div>
+        </div>
+        <div class="playlist-full-body" id="pl-body-${p.id}">
+          <div style="padding:16px" id="pl-tracks-${p.id}">
+            <div class="loading-spinner"></div>
+          </div>
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><p class="empty-state-title">Could not load playlists</p></div>';
+  }
+}
+
+async function togglePlaylist(id, headerEl) {
+  const body = document.getElementById(`pl-body-${id}`);
+  const isOpen = body.classList.toggle('open');
+  if (isOpen) {
+    const tracksEl = document.getElementById(`pl-tracks-${id}`);
+    try {
+      const data = await Api.get(`/tracks/playlist/${id}/tracks`);
+      const tracks = data.tracks || [];
+      if (!tracks.length) {
+        tracksEl.innerHTML = '<p style="color:var(--text-muted);font-size:0.875rem;text-align:center">No tracks yet. <a href="music.html" style="color:var(--gold)">Browse music</a> to add some.</p>';
+      } else {
+        tracksEl.innerHTML = `<div class="track-list">${tracks.map((t,i) => `
+          <div class="track-row">
+            <span class="track-num">${i+1}</span>
+            <div class="track-info">
+              <div class="track-thumb-placeholder">🎵</div>
+              <div>
+                <div class="track-name">${esc(t.title)}</div>
+                <div class="track-artist">${esc(t.artist||'Unknown')}</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <span class="track-duration">${fmtMs(t.duration_ms)}</span>
+              <button style="color:var(--red);font-size:1.1rem;line-height:1" onclick="removeTrack(${id},${t.id},this)" title="Remove">✕</button>
+            </div>
+          </div>`).join('')}</div>`;
+      }
+    } catch(e) {
+      tracksEl.innerHTML = '<p style="color:var(--text-muted);font-size:0.875rem">Could not load tracks.</p>';
+    }
+  }
+}
+
+async function createPlaylist() {
+  const name = prompt('Playlist name:');
+  if (!name?.trim()) return;
+  const data = await Api.post('/playlists', { name: name.trim() });
+  if (data.id) { Toast.success(`Playlist "${name}" created!`); loadPlaylists(); }
+  else Toast.error(data.error || 'Failed');
+}
+
+async function renamePlaylist(id, currentName) {
+  const name = prompt('New name:', currentName);
+  if (!name?.trim() || name === currentName) return;
+  const data = await Api.put(`/playlists/${id}`, { name: name.trim() });
+  if (data.id) { Toast.success('Renamed!'); loadPlaylists(); }
+  else Toast.error(data.error || 'Failed');
+}
+
+async function deletePlaylist(id) {
+  if (!confirm('Delete this playlist?')) return;
+  const data = await Api.del(`/playlists/${id}`);
+  if (data.message) { Toast.success('Playlist deleted'); loadPlaylists(); }
+  else Toast.error(data.error || 'Failed');
+}
+
+async function removeTrack(playlistId, trackId, btn) {
+  const data = await Api.del(`/tracks/playlist/${playlistId}/tracks/${trackId}`);
+  if (data.message) {
+    Toast.success('Track removed');
+    btn.closest('.track-row').remove();
+  } else Toast.error(data.error || 'Failed');
+}
+
+async function loadRegisteredEvents() {
+  const el = document.getElementById('events-container');
+  // Load all events, cross-reference with stored registrations
+  try {
+    const data = await Api.get('/events');
+    const registrations = JSON.parse(localStorage.getItem('ceol_registrations') || '[]');
+    const registered = (data.events || []).filter(e => registrations.includes(e.id));
+    if (!registered.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📅</div><p class="empty-state-title">No registered events</p><p class="empty-state-sub"><a href="events.html" style="color:var(--gold)">Browse events</a> to register</p></div>`;
+      return;
+    }
+    el.innerHTML = registered.map(e => {
+      const date = e.event_date ? new Date(e.event_date).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'long',year:'numeric'}) : 'Date TBC';
+      return `
+        <div class="event-card" style="margin-bottom:12px">
+          <div class="event-card-body" style="padding:20px">
+            <div class="event-card-date">${date}</div>
+            <div class="event-card-title">${esc(e.title)}</div>
+            <div class="event-card-location">📍 ${esc(e.location||'TBC')}</div>
+            <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+              <span class="badge badge-verified">✓ Registered</span>
+              <button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:0.8rem" onclick="unregisterEvent(${e.id},this)">Unregister</button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><p class="empty-state-title">Could not load events</p></div>';
+  }
+}
+
+async function unregisterEvent(id, btn) {
+  const data = await Api.del(`/events/${id}/register`);
+  if (data.message) {
+    Toast.success('Unregistered from event');
+    const regs = JSON.parse(localStorage.getItem('ceol_registrations') || '[]').filter(r => r !== id);
+    localStorage.setItem('ceol_registrations', JSON.stringify(regs));
+    loadRegisteredEvents();
+  } else Toast.error(data.error || 'Failed');
+}
+
+function fmtMs(ms) { if(!ms) return '—'; const m=Math.floor(ms/60000),s=Math.floor((ms%60000)/1000); return `${m}:${s.toString().padStart(2,'0')}`; }
+function esc(s) { return String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>

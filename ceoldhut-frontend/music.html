@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Music — CeòlDhut</title>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<div id="navbar-placeholder"></div>
+
+<div class="page-content">
+  <div class="app-layout">
+
+    <!-- Sidebar ──────────────────────────────────────── -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Browse</div>
+        <div class="sidebar-item active" onclick="loadCeltic()">
+          <span class="sidebar-item-icon">🏴󠁧󠁢󠁳󠁣󠁴󠁿</span> Celtic Mix
+        </div>
+        <div class="sidebar-item" onclick="searchByGenre('Scottish traditional')">
+          <span class="sidebar-item-icon">🎻</span> Scottish
+        </div>
+        <div class="sidebar-item" onclick="searchByGenre('Irish folk music')">
+          <span class="sidebar-item-icon">🍀</span> Irish
+        </div>
+        <div class="sidebar-item" onclick="searchByGenre('Welsh traditional music')">
+          <span class="sidebar-item-icon">🐉</span> Welsh
+        </div>
+        <div class="sidebar-item" onclick="searchByGenre('Breton music')">
+          <span class="sidebar-item-icon">⚓</span> Breton
+        </div>
+        <div class="sidebar-item" onclick="searchByGenre('Manx music Isle of Man')">
+          <span class="sidebar-item-icon">🌊</span> Manx
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Your Library</div>
+        <div id="sidebar-playlists">
+          <div class="sidebar-item" onclick="window.location.href='login.html'" id="sidebar-login-prompt" style="display:none;">
+            <span class="sidebar-item-icon">🔒</span> Login to see playlists
+          </div>
+        </div>
+        <div class="sidebar-item" id="create-pl-btn" style="display:none;" onclick="promptCreatePlaylist()">
+          <span class="sidebar-item-icon">＋</span> New Playlist
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main ─────────────────────────────────────────── -->
+    <main>
+      <!-- Search -->
+      <div style="margin-bottom:28px">
+        <div class="search-wrapper">
+          <span class="search-icon">🔍</span>
+          <input
+            class="search-input"
+            id="search-input"
+            placeholder="Search Celtic music, artists, albums…"
+            autocomplete="off"
+          >
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filter-bar" id="filter-bar" style="margin-bottom:28px">
+        <button class="filter-pill active" data-type="track">Tracks</button>
+        <button class="filter-pill" data-type="artist">Artists</button>
+        <button class="filter-pill" data-type="playlist">Playlists</button>
+      </div>
+
+      <!-- Results header -->
+      <div class="section-header">
+        <h2 class="section-title" id="results-title">Celtic Music</h2>
+        <span id="results-count" style="font-size:0.85rem;color:var(--text-muted)"></span>
+      </div>
+
+      <!-- Track list -->
+      <div id="results-container">
+        <div class="empty-state">
+          <div class="loading-spinner"></div>
+        </div>
+      </div>
+    </main>
+
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/components.js"></script>
+<script>
+let currentType = 'track';
+let currentTrackResults = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  injectSharedComponents('music');
+
+  // Load sidebar playlists
+  if (Auth.isLoggedIn()) {
+    document.getElementById('create-pl-btn').style.display = 'flex';
+    loadSidebarPlaylists();
+  } else {
+    document.getElementById('sidebar-login-prompt').style.display = 'flex';
+  }
+
+  // Check URL params
+  const params = new URLSearchParams(window.location.search);
+  const q = params.get('q');
+  if (q) {
+    document.getElementById('search-input').value = q;
+    performSearch(q, currentType);
+  } else {
+    loadCeltic();
+  }
+
+  // Search input
+  const searchInput = document.getElementById('search-input');
+  let timeout;
+  searchInput?.addEventListener('input', () => {
+    clearTimeout(timeout);
+    const q = searchInput.value.trim();
+    if (!q) { loadCeltic(); return; }
+    timeout = setTimeout(() => performSearch(q, currentType), 400);
+  });
+
+  // Filter pills
+  document.querySelectorAll('.filter-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      currentType = pill.dataset.type;
+      const q = searchInput.value.trim();
+      if (q) performSearch(q, currentType);
+      else loadCeltic();
+    });
+  });
+});
+
+async function loadCeltic() {
+  document.getElementById('results-title').textContent = 'Celtic Music';
+  showLoading();
+  try {
+    const data = await Api.get('/music/search/celtic?limit=30');
+    renderTracks(data.results || []);
+    document.getElementById('results-count').textContent = `${data.count || 0} tracks`;
+  } catch(e) {
+    showError('Could not load music. Is the backend running?');
+  }
+}
+
+function searchByGenre(q) {
+  document.getElementById('search-input').value = q;
+  performSearch(q, 'track');
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  if (window.event?.currentTarget) {
+    window.event.currentTarget.classList.add('active');
+  }
+}
+
+async function performSearch(q, type = 'track') {
+  document.getElementById('results-title').textContent = `Results for "${q}"`;
+  showLoading();
+  try {
+    const data = await Api.get(`/music/search?q=${encodeURIComponent(q)}&type=${type}&limit=10`);
+    if (data?.error) throw new Error(data.error);
+    const results = Array.isArray(data?.results) ? data.results : [];
+    document.getElementById('results-count').textContent = `${results.length} results`;
+    if (type === 'track') renderTracks(results);
+    else if (type === 'artist') renderArtists(results);
+    else if (type === 'playlist') renderPlaylists(results);
+  } catch(e) {
+    showError(e?.message || 'Search failed. Make sure the backend is running.');
+  }
+}
+
+function renderTracks(tracks) {
+  const el = document.getElementById('results-container');
+  currentTrackResults = Array.isArray(tracks) ? tracks : [];
+  if (!currentTrackResults.length) { el.innerHTML = emptyState('🎵', 'No tracks found', 'Try a different search term'); return; }
+  el.innerHTML = `
+    <div class="track-list">
+      ${currentTrackResults.map((t, i) => `
+        <div class="track-row${t.playing ? ' playing' : ''}" data-track-index="${i}">
+          <span class="track-num">${i + 1}</span>
+          <div class="track-info">
+            ${t.image ? `<img class="track-thumb" src="${t.image}" alt="" loading="lazy">` : `<div class="track-thumb-placeholder">🎵</div>`}
+            <div>
+              <div class="track-name">${esc(t.name)}</div>
+              <div class="track-artist">${esc(t.artist)} · ${esc(t.album || '')}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="track-duration">${fmtMs(t.duration_ms)}</span>
+            <button class="add-playlist-btn" type="button" title="Add to playlist" data-add-track="${i}">＋</button>
+          </div>
+        </div>`).join('')}
+    </div>`;
+
+  el.querySelectorAll('[data-track-index]').forEach(row => {
+    row.addEventListener('click', () => {
+      const track = currentTrackResults[Number(row.dataset.trackIndex)];
+      if (track) window.__playTrack(track);
+    });
+  });
+
+  el.querySelectorAll('[data-add-track]').forEach(button => {
+    button.addEventListener('click', event => {
+      event.stopPropagation();
+      const track = currentTrackResults[Number(button.dataset.addTrack)];
+      if (track) openAddToPlaylist(track);
+    });
+  });
+}
+
+function renderArtists(artists) {
+  const el = document.getElementById('results-container');
+  if (!artists.length) { el.innerHTML = emptyState('🎤', 'No artists found'); return; }
+  el.innerHTML = `
+    <div class="card-grid">
+      ${artists.map(a => `
+        <div class="music-card" onclick="searchByArtist('${esc(a.name)}')" style="cursor:pointer">
+          ${a.image ? `<img class="music-card-img" src="${a.image}" alt="${esc(a.name)}" loading="lazy">` : `<div class="music-card-img-placeholder">🎤</div>`}
+          <div class="music-card-body">
+            <div class="music-card-title">${esc(a.name)}</div>
+            <div class="music-card-sub">${(a.genres || []).slice(0,2).join(', ') || 'Celtic Artist'}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function renderPlaylists(playlists) {
+  const el = document.getElementById('results-container');
+  if (!playlists.length) { el.innerHTML = emptyState('📃', 'No playlists found'); return; }
+  el.innerHTML = `
+    <div class="card-grid">
+      ${playlists.map(p => `
+        <div class="music-card" style="cursor:pointer" onclick="window.open('${p.spotify_url}','_blank')">
+          ${p.image ? `<img class="music-card-img" src="${p.image}" alt="${esc(p.name)}" loading="lazy">` : `<div class="music-card-img-placeholder">📃</div>`}
+          <div class="music-card-body">
+            <div class="music-card-title">${esc(p.name)}</div>
+            <div class="music-card-sub">${p.tracks} tracks · ${esc(p.owner)}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function searchByArtist(name) {
+  document.getElementById('search-input').value = name;
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  document.querySelector('[data-type="track"]').classList.add('active');
+  currentType = 'track';
+  performSearch(name, 'track');
+}
+
+async function loadSidebarPlaylists() {
+  try {
+    const data = await Api.get('/playlists');
+    const pls = data.playlists || [];
+    const el = document.getElementById('sidebar-playlists');
+    el.innerHTML = pls.map(p => `
+      <div class="playlist-item" onclick="loadPlaylistTracks(${p.id}, '${esc(p.name)}')">
+        <div class="playlist-thumb">🎵</div>
+        <span class="playlist-name">${esc(p.name)}</span>
+      </div>`).join('') || '<p style="padding:8px 12px;font-size:0.8rem;color:var(--text-dim)">No playlists yet</p>';
+  } catch(e) {}
+}
+
+async function loadPlaylistTracks(id, name) {
+  document.getElementById('results-title').textContent = name;
+  showLoading();
+  try {
+    const data = await Api.get(`/tracks/playlist/${id}/tracks`);
+    renderTracks(data.tracks || []);
+    document.getElementById('results-count').textContent = `${data.tracks?.length || 0} tracks`;
+  } catch(e) {
+    showError('Could not load playlist tracks.');
+  }
+}
+
+async function promptCreatePlaylist() {
+  const name = prompt('Playlist name:');
+  if (!name?.trim()) return;
+  const data = await Api.post('/playlists', { name: name.trim() });
+  if (data.id) { Toast.success(`Playlist "${name}" created!`); loadSidebarPlaylists(); }
+  else Toast.error(data.error || 'Failed to create playlist');
+}
+
+function showLoading() {
+  document.getElementById('results-container').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:2px">
+      ${Array(8).fill(0).map(() => `
+        <div style="display:grid;grid-template-columns:40px 1fr auto;gap:16px;align-items:center;padding:10px 12px">
+          <div class="skeleton" style="height:14px;border-radius:4px"></div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <div class="skeleton" style="width:44px;height:44px;border-radius:6px;flex-shrink:0"></div>
+            <div style="flex:1">
+              <div class="skeleton" style="height:13px;width:60%;margin-bottom:6px;border-radius:4px"></div>
+              <div class="skeleton" style="height:11px;width:40%;border-radius:4px"></div>
+            </div>
+          </div>
+          <div class="skeleton" style="height:12px;width:40px;border-radius:4px"></div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function showError(msg) {
+  document.getElementById('results-container').innerHTML = `
+    <div class="empty-state">
+      <div class="empty-state-icon">⚠️</div>
+      <p class="empty-state-title">Something went wrong</p>
+      <p class="empty-state-sub">${msg}</p>
+    </div>`;
+}
+
+function emptyState(icon, title, sub = '') {
+  return `<div class="empty-state"><div class="empty-state-icon">${icon}</div><p class="empty-state-title">${title}</p>${sub ? `<p class="empty-state-sub">${sub}</p>` : ''}</div>`;
+}
+
+function esc(s) { return String(s || '').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtMs(ms) {
+  if (!ms) return '—';
+  const m = Math.floor(ms / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+window.__playTrack = function(track) { Player.play(track); };
+</script>
+</body>
+</html>

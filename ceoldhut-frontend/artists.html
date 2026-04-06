@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Artists — CeòlDhut</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .artists-hero {
+      background: linear-gradient(160deg, var(--bg-2) 0%, var(--bg) 100%);
+      border-bottom: 1px solid var(--border);
+      padding: calc(var(--nav-h) + 40px) 0 40px;
+    }
+    .artist-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      transition: var(--transition-md);
+      cursor: pointer;
+    }
+    .artist-card:hover { border-color: var(--border-bright); transform: translateY(-3px); box-shadow: var(--shadow-gold); }
+    .artist-avatar {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--green), var(--bg-3));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; margin-bottom: 16px;
+      border: 2px solid var(--border);
+    }
+    .artist-name { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
+    .artist-country { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; }
+    .verified-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px;
+      background: rgba(39,174,96,0.12);
+      border: 1px solid rgba(39,174,96,0.25);
+      border-radius: var(--radius-pill);
+      font-size: 0.72rem;
+      color: #5ae088;
+      font-weight: 600;
+    }
+    .unverified-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px;
+      background: var(--gold-glow);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-pill);
+      font-size: 0.72rem;
+      color: var(--gold);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+<div id="navbar-placeholder"></div>
+
+<div class="artists-hero">
+  <div class="container">
+    <div class="hero-eyebrow">Celtic Heritage</div>
+    <h1 style="margin-bottom:12px">Celtic Artists</h1>
+    <p style="color:var(--text-muted);max-width:480px;margin-bottom:28px">
+      Discover verified Celtic artists from Scotland, Ireland, Wales and across the Celtic nations.
+    </p>
+    <div class="search-wrapper" style="max-width:440px">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" id="search-input" placeholder="Search artists…">
+    </div>
+  </div>
+</div>
+
+<div class="page-content" style="padding-top:32px">
+  <div class="container">
+
+    <div class="filter-bar" style="margin-bottom:32px">
+      <button class="filter-pill active" data-filter="all">All Artists</button>
+      <button class="filter-pill" data-filter="verified">Verified Only</button>
+    </div>
+
+    <!-- Admin: Add artist panel -->
+    <div id="admin-panel" style="display:none;margin-bottom:32px">
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;max-width:480px">
+        <h3 style="margin-bottom:16px;font-family:var(--font-serif)">Add New Artist</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input class="form-input" id="add-artist-name" placeholder="Artist name" style="flex:1;min-width:160px">
+          <input class="form-input" id="add-artist-country" placeholder="Country" style="flex:1;min-width:120px">
+          <input class="form-input" id="add-artist-spotify" placeholder="Spotify ID (optional)" style="flex:1;min-width:160px">
+          <button class="btn btn-primary btn-sm" onclick="addArtist()">Add Artist</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:20px;color:var(--text-muted);font-size:0.875rem" id="results-count"></div>
+
+    <div class="card-grid" id="artists-grid">
+      <div class="skeleton" style="height:180px;border-radius:20px"></div>
+      <div class="skeleton" style="height:180px;border-radius:20px"></div>
+      <div class="skeleton" style="height:180px;border-radius:20px"></div>
+      <div class="skeleton" style="height:180px;border-radius:20px"></div>
+    </div>
+
+    <div id="empty-state" class="empty-state" style="display:none">
+      <div class="empty-state-icon">🎤</div>
+      <p class="empty-state-title">No artists found</p>
+      <p class="empty-state-sub">Try a different search or filter</p>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/components.js"></script>
+<script>
+let allArtists = [];
+let currentFilter = 'all';
+
+document.addEventListener('DOMContentLoaded', async () => {
+  injectSharedComponents('artists');
+
+  if (Auth.isAdmin()) {
+    document.getElementById('admin-panel').style.display = 'block';
+  }
+
+  await loadArtists();
+
+  document.querySelectorAll('.filter-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      currentFilter = pill.dataset.filter;
+      renderArtists();
+    });
+  });
+
+  document.getElementById('search-input')?.addEventListener('input', e => renderArtists(e.target.value));
+});
+
+async function loadArtists() {
+  try {
+    const data = await Api.get('/artists');
+    allArtists = data.artists || [];
+    renderArtists();
+  } catch(e) {
+    document.getElementById('artists-grid').innerHTML = '';
+    document.getElementById('empty-state').style.display = 'block';
+    document.getElementById('empty-state').querySelector('.empty-state-sub').textContent = 'Could not connect to backend.';
+  }
+}
+
+function renderArtists(search = '') {
+  const searchTerm = (search || document.getElementById('search-input')?.value || '').toLowerCase();
+  let filtered = allArtists;
+
+  if (currentFilter === 'verified') filtered = filtered.filter(a => a.verified);
+  if (searchTerm) filtered = filtered.filter(a => a.name.toLowerCase().includes(searchTerm) || (a.country||'').toLowerCase().includes(searchTerm));
+
+  const grid = document.getElementById('artists-grid');
+  const empty = document.getElementById('empty-state');
+  document.getElementById('results-count').textContent = `${filtered.length} artist${filtered.length !== 1 ? 's' : ''}`;
+
+  if (!filtered.length) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  grid.innerHTML = filtered.map(a => `
+    <div class="artist-card" onclick="window.location.href='music.html?q=${encodeURIComponent(a.name)}'">
+      <div class="artist-avatar">🎤</div>
+      <div class="artist-name">${esc(a.name)}</div>
+      <div class="artist-country">📍 ${esc(a.country || 'Celtic Nations')}</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        ${a.verified
+          ? `<span class="verified-badge">✓ Verified</span>`
+          : `<span class="unverified-badge">Pending</span>`}
+        ${Auth.isAdmin() && !a.verified ? `<button class="btn btn-sm" style="background:var(--gold);color:var(--bg);padding:3px 12px;font-size:0.75rem;border-radius:99px" onclick="event.stopPropagation();verifyArtist(${a.id}, this)">Verify</button>` : ''}
+        ${Auth.isAdmin() ? `<button class="btn btn-sm" style="color:var(--red);font-size:0.75rem" onclick="event.stopPropagation();deleteArtist(${a.id}, this)">✕</button>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+async function addArtist() {
+  const name = document.getElementById('add-artist-name').value.trim();
+  const country = document.getElementById('add-artist-country').value.trim();
+  const spotify_id = document.getElementById('add-artist-spotify').value.trim();
+  if (!name) { Toast.error('Artist name is required'); return; }
+  const data = await Api.post('/artists', { name, country, spotify_id: spotify_id || undefined });
+  if (data.id) {
+    Toast.success(`Artist "${name}" added!`);
+    document.getElementById('add-artist-name').value = '';
+    document.getElementById('add-artist-country').value = '';
+    document.getElementById('add-artist-spotify').value = '';
+    await loadArtists();
+  } else Toast.error(data.error || 'Failed to add artist');
+}
+
+async function verifyArtist(id, btn) {
+  const data = await Api.put(`/artists/${id}/verify`, {});
+  if (data.verified) { Toast.success('Artist verified!'); await loadArtists(); }
+  else Toast.error(data.error || 'Failed to verify');
+}
+
+async function deleteArtist(id, btn) {
+  if (!confirm('Delete this artist?')) return;
+  const data = await Api.del(`/artists/${id}`);
+  if (data.message) { Toast.success('Artist deleted'); await loadArtists(); }
+  else Toast.error(data.error || 'Failed to delete');
+}
+
+function esc(s) { return String(s || '').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>
