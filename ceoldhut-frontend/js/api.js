@@ -20,10 +20,13 @@ const Auth = {
   token() { return localStorage.getItem('ceol_token'); },
   user() {
     try { return JSON.parse(localStorage.getItem('ceol_user')); }
-    catch { return null; }
+    catch (e) { return null; }
   },
   isLoggedIn() { return !!this.token(); },
-  isAdmin() { return this.user()?.role === 'ADMIN'; },
+  isAdmin() {
+    const user = this.user();
+    return !!user && user.role === 'ADMIN';
+  },
   logout() {
     localStorage.removeItem('ceol_token');
     localStorage.removeItem('ceol_user');
@@ -217,8 +220,12 @@ function initNav() {
   const loginBtn = document.getElementById('nav-login-btn');
   const accountBtn = document.getElementById('nav-account-btn');
   if (Auth.isLoggedIn()) {
+    const user = Auth.user();
     if (loginBtn) loginBtn.style.display = 'none';
-    if (accountBtn) { accountBtn.style.display = 'flex'; accountBtn.textContent = Auth.user()?.email?.split('@')[0] || 'Account'; }
+    if (accountBtn) {
+      accountBtn.style.display = 'flex';
+      accountBtn.textContent = user && user.email ? user.email.split('@')[0] : 'Account';
+    }
   } else {
     if (accountBtn) accountBtn.style.display = 'none';
   }
@@ -236,7 +243,8 @@ function closeModal(id) {
 function initModals() {
   document.querySelectorAll('[data-modal-close]').forEach(btn => {
     btn.addEventListener('click', () => {
-      btn.closest('.modal-overlay')?.classList.remove('open');
+      const overlay = btn.closest('.modal-overlay');
+      if (overlay) overlay.classList.remove('open');
     });
   });
   document.querySelectorAll('.modal-overlay').forEach(overlay => {

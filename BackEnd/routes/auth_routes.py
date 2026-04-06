@@ -50,11 +50,6 @@ def register():
 
     email = data.get("email")
     password = data.get("password")
-    role = data.get("role", "USER")
-
-    if role not in {"USER", "ADMIN"}:
-        role = "USER"
-
     existing_user = User.query.filter_by(email=email).first()
 
     if existing_user:
@@ -65,7 +60,7 @@ def register():
     new_user = User(
         email=email,
         password_hash=password_hash,
-        role=role
+        role="USER"
     )
 
     db.session.add(new_user)

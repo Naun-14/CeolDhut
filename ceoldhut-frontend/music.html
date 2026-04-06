@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Search input
   const searchInput = document.getElementById('search-input');
   let timeout;
-  searchInput?.addEventListener('input', () => {
+  if (searchInput) searchInput.addEventListener('input', () => {
     clearTimeout(timeout);
     const q = searchInput.value.trim();
     if (!q) { loadCeltic(); return; }
@@ -155,7 +155,7 @@ function searchByGenre(q) {
   document.getElementById('search-input').value = q;
   performSearch(q, 'track');
   document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
-  if (window.event?.currentTarget) {
+  if (window.event && window.event.currentTarget) {
     window.event.currentTarget.classList.add('active');
   }
 }
@@ -165,14 +165,14 @@ async function performSearch(q, type = 'track') {
   showLoading();
   try {
     const data = await Api.get(`/music/search?q=${encodeURIComponent(q)}&type=${type}&limit=10`);
-    if (data?.error) throw new Error(data.error);
-    const results = Array.isArray(data?.results) ? data.results : [];
+    if (data && data.error) throw new Error(data.error);
+    const results = Array.isArray(data && data.results) ? data.results : [];
     document.getElementById('results-count').textContent = `${results.length} results`;
     if (type === 'track') renderTracks(results);
     else if (type === 'artist') renderArtists(results);
     else if (type === 'playlist') renderPlaylists(results);
   } catch(e) {
-    showError(e?.message || 'Search failed. Make sure the backend is running.');
+    showError((e && e.message) || 'Search failed. Make sure the backend is running.');
   }
 }
 
@@ -274,7 +274,7 @@ async function loadPlaylistTracks(id, name) {
   try {
     const data = await Api.get(`/tracks/playlist/${id}/tracks`);
     renderTracks(data.tracks || []);
-    document.getElementById('results-count').textContent = `${data.tracks?.length || 0} tracks`;
+    document.getElementById('results-count').textContent = `${(data.tracks && data.tracks.length) || 0} tracks`;
   } catch(e) {
     showError('Could not load playlist tracks.');
   }
@@ -282,7 +282,7 @@ async function loadPlaylistTracks(id, name) {
 
 async function promptCreatePlaylist() {
   const name = prompt('Playlist name:');
-  if (!name?.trim()) return;
+  if (!name || !name.trim()) return;
   const data = await Api.post('/playlists', { name: name.trim() });
   if (data.id) { Toast.success(`Playlist "${name}" created!`); loadSidebarPlaylists(); }
   else Toast.error(data.error || 'Failed to create playlist');

@@ -4,6 +4,7 @@
    ============================================================ */
 
 function renderNavbar(activePage = '') {
+  const user = Auth.user();
   const pages = [
     { id: 'home',    href: 'index.html',   label: 'Discover' },
     { id: 'music',   href: 'music.html',   label: 'Music' },
@@ -21,7 +22,7 @@ function renderNavbar(activePage = '') {
 
   const authRight = Auth.isLoggedIn()
     ? `<a href="account.html" class="nav-btn nav-btn-ghost" id="nav-account-btn">
-         ${Auth.user()?.email?.split('@')[0] || 'Account'}
+         ${user && user.email ? user.email.split('@')[0] : 'Account'}
        </a>
        <button class="nav-btn nav-btn-ghost" onclick="Auth.logout()">Logout</button>`
     : `<a href="login.html" class="nav-btn nav-btn-ghost" id="nav-login-btn">Login</a>
@@ -120,9 +121,10 @@ function injectSharedComponents(activePage) {
   document.body.insertAdjacentHTML('beforeend', renderPlaylistModal());
 
   // Create playlist handler
-  document.getElementById('create-playlist-btn')?.addEventListener('click', async () => {
+  const createPlaylistBtn = document.getElementById('create-playlist-btn');
+  if (createPlaylistBtn) createPlaylistBtn.addEventListener('click', async () => {
     const nameInput = document.getElementById('new-playlist-name');
-    const name = nameInput?.value.trim();
+    const name = nameInput ? nameInput.value.trim() : '';
     if (!name) return;
     if (!Auth.isLoggedIn()) { Toast.error('Please login first'); return; }
     const data = await Api.post('/playlists', { name });
