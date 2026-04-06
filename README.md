@@ -98,7 +98,7 @@ python BackEnd/app.py
 
 The app will be available at:
 
-- `http://127.0.0.1:5000/`
+- https://ceoldhut.onrender.com/
 
 ## Deployment
 
@@ -137,14 +137,14 @@ Latest local test result:
 
 - `14 passed`
 
-More detail is available in [TESTING.md](/C:/Users/abdul/Documents/CeolDhut/docs/TESTING.md).
+More detail is available in [TESTING.md](/C:/Users/abdul/Documents/CeolDhut/docs/TESTING.md). (Refer to DOCS folder)
 
 ## API Documentation
 
 Two forms of API documentation are included:
 
-- human-readable reference: [API_REFERENCE.md](/C:/Users/abdul/Documents/CeolDhut/docs/API_REFERENCE.md)
-- OpenAPI specification: [openapi.yaml](/C:/Users/abdul/Documents/CeolDhut/docs/openapi.yaml)
+- human-readable reference: [API_REFERENCE.md](/C:/Users/abdul/Documents/CeolDhut/docs/API_REFERENCE.md)  (Refer to DOCS folder)
+- OpenAPI specification: [openapi.yaml](/C:/Users/abdul/Documents/CeolDhut/docs/openapi.yaml)  (Refer to DOCS folder)
 
 ## Main Application Routes
 
@@ -176,6 +176,6 @@ Two forms of API documentation are included:
 
 ## Usability Review
 
-A structured usability review for the current UI and core user flows is documented in [USABILITY_REVIEW.md](/C:/Users/abdul/Documents/CeolDhut/docs/USABILITY_REVIEW.md).
+A structured usability review for the current UI and core user flows is documented in [USABILITY_REVIEW.md](/C:/Users/abdul/Documents/CeolDhut/docs/USABILITY_REVIEW.md).  (Refer to DOCS folder)
 
 
