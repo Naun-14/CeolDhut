@@ -1,44 +1,16 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, g, jsonify, request
+
+from auth_utils import require_auth
 from models import db, Playlist
-import jwt
-import os
 
 playlist_bp = Blueprint("playlists", __name__)
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'ceoldhut key')
-
-
-def verify_token(token):
-    """Verify JWT token and return user_id"""
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
-        return payload['user_id']
-    except:
-        return None
-
 
 @playlist_bp.route("", methods=["GET"])
+@require_auth
 def get_playlists():
-    """Get all playlists for logged-in user"""
-    
-    # Get token from header
-    token = request.headers.get('Authorization')
-    
-    if not token:
-        return jsonify({"error": "Missing token"}), 401
-    
-    # Remove "Bearer " prefix if present
-    if token.startswith('Bearer '):
-        token = token[7:]
-    
-    # Verify token
-    user_id = verify_token(token)
-    if not user_id:
-        return jsonify({"error": "Invalid token"}), 401
-    
-    # Get user's playlists
-    playlists = Playlist.query.filter_by(user_id=user_id).all()
-    
+    playlists = Playlist.query.filter_by(user_id=g.current_user.id).all()
+
     return jsonify({
         "playlists": [
             {
@@ -52,39 +24,24 @@ def get_playlists():
 
 
 @playlist_bp.route("", methods=["POST"])
+@require_auth
 def create_playlist():
-    """Create a new playlist"""
-    
-    # Get token
-    token = request.headers.get('Authorization')
-    
-    if not token:
-        return jsonify({"error": "Missing token"}), 401
-    
-    if token.startswith('Bearer '):
-        token = token[7:]
-    
-    # Verify token
-    user_id = verify_token(token)
-    if not user_id:
-        return jsonify({"error": "Invalid token"}), 401
-    
-    # Get data
-    data = request.json
-    name = data.get("name")
-    
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+
     if not name:
         return jsonify({"error": "Playlist name required"}), 400
-    
-    # Create playlist
+    if Playlist.query.filter_by(user_id=g.current_user.id, name=name).first():
+        return jsonify({"error": "Playlist already exists"}), 400
+
     new_playlist = Playlist(
-        user_id=user_id,
+        user_id=g.current_user.id,
         name=name
     )
-    
+
     db.session.add(new_playlist)
     db.session.commit()
-    
+
     return jsonify({
         "message": "Playlist created",
         "id": new_playlist.id,
@@ -93,36 +50,28 @@ def create_playlist():
 
 
 @playlist_bp.route("/<int:playlist_id>", methods=["PUT"])
+@require_auth
 def update_playlist(playlist_id):
-    """Update playlist name"""
-    
-    # Get token
-    token = request.headers.get('Authorization')
-    
-    if not token:
-        return jsonify({"error": "Missing token"}), 401
-    
-    if token.startswith('Bearer '):
-        token = token[7:]
-    
-    user_id = verify_token(token)
-    if not user_id:
-        return jsonify({"error": "Invalid token"}), 401
-    
-    # Find playlist
-    playlist = Playlist.query.filter_by(id=playlist_id, user_id=user_id).first()
-    
+    playlist = Playlist.query.filter_by(id=playlist_id, user_id=g.current_user.id).first()
+
     if not playlist:
         return jsonify({"error": "Playlist not found"}), 404
-    
-    # Update name
-    data = request.json
-    name = data.get("name")
-    
-    if name:
-        playlist.name = name
-        db.session.commit()
-    
+
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+
+    if not name:
+        return jsonify({"error": "Playlist name required"}), 400
+    if Playlist.query.filter(
+        Playlist.user_id == g.current_user.id,
+        Playlist.name == name,
+        Playlist.id != playlist_id,
+    ).first():
+        return jsonify({"error": "Playlist already exists"}), 400
+
+    playlist.name = name
+    db.session.commit()
+
     return jsonify({
         "message": "Playlist updated",
         "id": playlist.id,
@@ -131,30 +80,14 @@ def update_playlist(playlist_id):
 
 
 @playlist_bp.route("/<int:playlist_id>", methods=["DELETE"])
+@require_auth
 def delete_playlist(playlist_id):
-    """Delete a playlist"""
-    
-    # Get token
-    token = request.headers.get('Authorization')
-    
-    if not token:
-        return jsonify({"error": "Missing token"}), 401
-    
-    if token.startswith('Bearer '):
-        token = token[7:]
-    
-    user_id = verify_token(token)
-    if not user_id:
-        return jsonify({"error": "Invalid token"}), 401
-    
-    # Find playlist
-    playlist = Playlist.query.filter_by(id=playlist_id, user_id=user_id).first()
-    
+    playlist = Playlist.query.filter_by(id=playlist_id, user_id=g.current_user.id).first()
+
     if not playlist:
         return jsonify({"error": "Playlist not found"}), 404
-    
-    # Delete
+
     db.session.delete(playlist)
     db.session.commit()
-    
+
     return jsonify({"message": "Playlist deleted"}), 200

@@ -1,0 +1,529 @@
+openapi: 3.0.3
+info:
+  title: CeolDhut API
+  version: 1.0.0
+  description: REST API for authentication, playlists, artists, events, tracks, and Spotify-backed music search.
+servers:
+  - url: https://ceoldhut.onrender.com/api
+tags:
+  - name: Auth
+  - name: Playlists
+  - name: Tracks
+  - name: Artists
+  - name: Events
+  - name: Music
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 6
+      responses:
+        '201':
+          description: User created
+        '400':
+          description: Validation error
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in and return a JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+        '401':
+          description: Invalid credentials
+  /playlists:
+    get:
+      tags: [Playlists]
+      summary: Get playlists for the logged-in user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Playlist list
+        '401':
+          description: Missing or invalid token
+    post:
+      tags: [Playlists]
+      summary: Create a playlist
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+      responses:
+        '201':
+          description: Playlist created
+        '400':
+          description: Validation error
+  /playlists/{playlist_id}:
+    put:
+      tags: [Playlists]
+      summary: Rename a playlist
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: playlist_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Playlist updated
+        '404':
+          description: Playlist not found
+    delete:
+      tags: [Playlists]
+      summary: Delete a playlist
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: playlist_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Playlist deleted
+        '404':
+          description: Playlist not found
+  /tracks:
+    post:
+      tags: [Tracks]
+      summary: Create a track record
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                artist_id:
+                  type: integer
+                spotify_id:
+                  type: string
+                duration_ms:
+                  type: integer
+      responses:
+        '201':
+          description: Track created
+        '200':
+          description: Track already exists
+  /tracks/playlist/{playlist_id}/tracks:
+    get:
+      tags: [Tracks]
+      summary: Get tracks in a playlist
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: playlist_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Playlist tracks
+    post:
+      tags: [Tracks]
+      summary: Add a track to a playlist
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: playlist_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [track_id]
+              properties:
+                track_id:
+                  type: integer
+      responses:
+        '201':
+          description: Track added
+        '400':
+          description: Duplicate or invalid request
+  /tracks/playlist/{playlist_id}/tracks/{track_id}:
+    delete:
+      tags: [Tracks]
+      summary: Remove a track from a playlist
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: playlist_id
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: track_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Track removed
+        '404':
+          description: Track not found in playlist
+  /artists:
+    get:
+      tags: [Artists]
+      summary: Get all artists
+      responses:
+        '200':
+          description: Artist list
+    post:
+      tags: [Artists]
+      summary: Create an artist
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                country:
+                  type: string
+                spotify_id:
+                  type: string
+      responses:
+        '201':
+          description: Artist created
+        '403':
+          description: Admin required
+  /artists/verified:
+    get:
+      tags: [Artists]
+      summary: Get verified artists
+      responses:
+        '200':
+          description: Verified artist list
+  /artists/{artist_id}:
+    get:
+      tags: [Artists]
+      summary: Get one artist
+      parameters:
+        - in: path
+          name: artist_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Artist details
+        '404':
+          description: Artist not found
+    put:
+      tags: [Artists]
+      summary: Update an artist
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: artist_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Artist updated
+        '403':
+          description: Admin required
+    delete:
+      tags: [Artists]
+      summary: Delete an artist
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: artist_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Artist deleted
+        '403':
+          description: Admin required
+  /artists/{artist_id}/verify:
+    put:
+      tags: [Artists]
+      summary: Verify an artist
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: artist_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Artist verified
+        '403':
+          description: Admin required
+  /events:
+    get:
+      tags: [Events]
+      summary: Get all events
+      responses:
+        '200':
+          description: Event list
+    post:
+      tags: [Events]
+      summary: Create an event
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                location:
+                  type: string
+                event_date:
+                  type: string
+                  format: date-time
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Event created
+        '403':
+          description: Admin required
+  /events/{event_id}:
+    get:
+      tags: [Events]
+      summary: Get one event
+      parameters:
+        - in: path
+          name: event_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Event details
+        '404':
+          description: Event not found
+    put:
+      tags: [Events]
+      summary: Update an event
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: event_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Event updated
+        '403':
+          description: Admin required
+    delete:
+      tags: [Events]
+      summary: Delete an event
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: event_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Event deleted
+        '403':
+          description: Admin required
+  /events/{event_id}/register:
+    post:
+      tags: [Events]
+      summary: Register the current user for an event
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: event_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Registered
+        '400':
+          description: Already registered
+    delete:
+      tags: [Events]
+      summary: Unregister the current user from an event
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: event_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Unregistered
+  /events/{event_id}/registrations:
+    get:
+      tags: [Events]
+      summary: Get registrations for an event
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: event_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Registration list
+        '403':
+          description: Admin required
+  /music/search:
+    get:
+      tags: [Music]
+      summary: Search Spotify-backed content
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: type
+          required: false
+          schema:
+            type: string
+            enum: [track, artist, playlist]
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10
+      responses:
+        '200':
+          description: Search results
+        '400':
+          description: Invalid query
+  /music/search/celtic:
+    get:
+      tags: [Music]
+      summary: Get featured Celtic tracks
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10
+      responses:
+        '200':
+          description: Featured tracks
+  /music/artist/{artist_id}:
+    get:
+      tags: [Music]
+      summary: Get Spotify artist details
+      parameters:
+        - in: path
+          name: artist_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Artist details
+  /music/track/{track_id}:
+    get:
+      tags: [Music]
+      summary: Get Spotify track details
+      parameters:
+        - in: path
+          name: track_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Track details
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -1,28 +1,15 @@
-from flask import Blueprint, request, jsonify
-from models import db, Artist, User
-import jwt
-import os
+from flask import Blueprint, jsonify, request
+
+from auth_utils import require_admin
+from models import Artist, db
 
 artists_bp = Blueprint("artists", __name__)
-
-SECRET_KEY = os.getenv('SECRET_KEY', 'ceoldhut key')
-
-
-def verify_token(token):
-    """Verify JWT token and return user_id"""
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
-        return payload['user_id']
-    except:
-        return None
 
 
 @artists_bp.route("", methods=["GET"])
 def get_all_artists():
-    """Get all artists"""
-    
     artists = Artist.query.all()
-    
+
     return jsonify({
         "artists": [
             {
@@ -39,10 +26,8 @@ def get_all_artists():
 
 @artists_bp.route("/verified", methods=["GET"])
 def get_verified_artists():
-    """Get only verified Celtic artists"""
-    
     artists = Artist.query.filter_by(verified=True).all()
-    
+
     return jsonify({
         "verified_artists": [
             {
@@ -58,13 +43,11 @@ def get_verified_artists():
 
 @artists_bp.route("/<int:artist_id>", methods=["GET"])
 def get_artist(artist_id):
-    """Get a specific artist"""
-    
     artist = Artist.query.filter_by(id=artist_id).first()
-    
+
     if not artist:
         return jsonify({"error": "Artist not found"}), 404
-    
+
     return jsonify({
         "id": artist.id,
         "name": artist.name,
@@ -75,43 +58,30 @@ def get_artist(artist_id):
 
 
 @artists_bp.route("", methods=["POST"])
+@require_admin
 def create_artist():
-    """Create a new artist"""
-    
-    token = request.headers.get('Authorization')
-    if not token:
-        return jsonify({"error": "Missing token"}), 401
-    
-    if token.startswith('Bearer '):
-        token = token[7:]
-    
-    user_id = verify_token(token)
-    if not user_id:
-        return jsonify({"error": "Invalid token"}), 401
-    
-    data = request.json
-    name = data.get("name")
-    country = data.get("country")
-    spotify_id = data.get("spotify_id")
-    
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    country = (data.get("country") or "").strip() or None
+    spotify_id = (data.get("spotify_id") or "").strip() or None
+
     if not name:
         return jsonify({"error": "Artist name required"}), 400
-    
-    # Check if artist already exists
+
     existing = Artist.query.filter_by(name=name).first()
     if existing:
         return jsonify({"error": "Artist already exists"}), 400
-    
+
     artist = Artist(
         name=name,
         country=country,
         spotify_id=spotify_id,
         verified=False
     )
-    
+
     db.session.add(artist)
     db.session.commit()
-    
+
     return jsonify({
         "message": "Artist created",
         "id": artist.id,
@@ -120,33 +90,17 @@ def create_artist():
 
 
 @artists_bp.route("/<int:artist_id>/verify", methods=["PUT"])
+@require_admin
 def verify_artist(artist_id):
-    """Verify an artist (Admin only)"""
-    
-    token = request.headers.get('Authorization')
-    if not token:
-        return jsonify({"error": "Missing token"}), 401
-    
-    if token.startswith('Bearer '):
-        token = token[7:]
-    
-    user_id = verify_token(token)
-    if not user_id:
-        return jsonify({"error": "Invalid token"}), 401
-    
-    # Check if user is admin
-    user = User.query.filter_by(id=user_id).first()
-    if not user or user.role != 'ADMIN':
-        return jsonify({"error": "Admin access required"}), 403
-    
     artist = Artist.query.filter_by(id=artist_id).first()
     if not artist:
         return jsonify({"error": "Artist not found"}), 404
-    
+
     artist.verified = True
-    artist.verified_by = user_id
+    from flask import g
+    artist.verified_by = g.current_user.id
     db.session.commit()
-    
+
     return jsonify({
         "message": "Artist verified",
         "id": artist.id,
@@ -156,40 +110,29 @@ def verify_artist(artist_id):
 
 
 @artists_bp.route("/<int:artist_id>", methods=["PUT"])
+@require_admin
 def update_artist(artist_id):
-    """Update artist information"""
-    
-    token = request.headers.get('Authorization')
-    if not token:
-        return jsonify({"error": "Missing token"}), 401
-    
-    if token.startswith('Bearer '):
-        token = token[7:]
-    
-    user_id = verify_token(token)
-    if not user_id:
-        return jsonify({"error": "Invalid token"}), 401
-    
-    # Check if user is admin
-    user = User.query.filter_by(id=user_id).first()
-    if not user or user.role != 'ADMIN':
-        return jsonify({"error": "Admin access required"}), 403
-    
     artist = Artist.query.filter_by(id=artist_id).first()
     if not artist:
         return jsonify({"error": "Artist not found"}), 404
-    
-    data = request.json
-    
+
+    data = request.get_json(silent=True) or {}
+
     if "name" in data:
-        artist.name = data.get("name")
+        name = (data.get("name") or "").strip()
+        if not name:
+            return jsonify({"error": "Artist name required"}), 400
+        duplicate = Artist.query.filter(Artist.name == name, Artist.id != artist_id).first()
+        if duplicate:
+            return jsonify({"error": "Artist already exists"}), 400
+        artist.name = name
     if "country" in data:
-        artist.country = data.get("country")
+        artist.country = (data.get("country") or "").strip() or None
     if "spotify_id" in data:
-        artist.spotify_id = data.get("spotify_id")
-    
+        artist.spotify_id = (data.get("spotify_id") or "").strip() or None
+
     db.session.commit()
-    
+
     return jsonify({
         "message": "Artist updated",
         "id": artist.id,
@@ -198,30 +141,13 @@ def update_artist(artist_id):
 
 
 @artists_bp.route("/<int:artist_id>", methods=["DELETE"])
+@require_admin
 def delete_artist(artist_id):
-    """Delete an artist (Admin only)"""
-    
-    token = request.headers.get('Authorization')
-    if not token:
-        return jsonify({"error": "Missing token"}), 401
-    
-    if token.startswith('Bearer '):
-        token = token[7:]
-    
-    user_id = verify_token(token)
-    if not user_id:
-        return jsonify({"error": "Invalid token"}), 401
-    
-    # Check if user is admin
-    user = User.query.filter_by(id=user_id).first()
-    if not user or user.role != 'ADMIN':
-        return jsonify({"error": "Admin access required"}), 403
-    
     artist = Artist.query.filter_by(id=artist_id).first()
     if not artist:
         return jsonify({"error": "Artist not found"}), 404
-    
+
     db.session.delete(artist)
     db.session.commit()
-    
+
     return jsonify({"message": "Artist deleted"}), 200
