@@ -75,21 +75,6 @@ Test dependencies:
 pip install -r BackEnd/requirements-dev.txt
 ```
 
-### 4. Configure environment variables
-
-Copy the example file and fill in real values:
-
-```bash
-cp BackEnd/.env.example BackEnd/.env
-```
-
-Required variables:
-
-- `DATABASE_URL`
-- `SECRET_KEY`
-- `SPOTIFY_CLIENT_ID`
-- `SPOTIFY_CLIENT_SECRET`
-
 ### 5. Run the app
 
 ```bash
@@ -98,7 +83,7 @@ python BackEnd/app.py
 
 The app will be available at:
 
-- https://ceoldhut.onrender.com/
+- https://ceoldhut.onrender.com/(Will take time to load as the service we are hosting isnt free)
 
 ## Deployment
 
