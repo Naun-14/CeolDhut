@@ -174,11 +174,10 @@ cd CeolDhut
 Or download the ZIP from GitHub, extract it, and open the project folder in PowerShell.
 
 2. Create and activate a virtual environment
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+python -m venv venv.\venv\Scripts\Activate.ps1
 If PowerShell blocks activation, run:
-
 Set-ExecutionPolicy -Scope Process Bypass
+
 
 3. Install dependencies
 Application dependencies:
@@ -205,8 +204,10 @@ If the database is empty, run:
 cd BackEnd
 ..\venv\Scripts\python.exe -c "from app import app; from models import db; app.app_context().push(); db.create_all(); print('tables created')"
 cd ..
+
 6. Run the application
 python BackEnd\app.py
+
 7. Open the app
 Go to:
 http://127.0.0.1:5000/
