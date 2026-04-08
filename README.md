@@ -164,3 +164,50 @@ Two forms of API documentation are included:
 A structured usability review for the current UI and core user flows is documented in [USABILITY_REVIEW.md](/C:/Users/abdul/Documents/CeolDhut/docs/USABILITY_REVIEW.md).  (Refer to DOCS folder)
 
 
+**Installation**
+
+1. Clone or download the repository
+Using Git:
+
+git clone https://github.com/Naun-14/CeolDhut.git
+cd CeolDhut
+Or download the ZIP from GitHub, extract it, and open the project folder in PowerShell.
+
+2. Create and activate a virtual environment
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+If PowerShell blocks activation, run:
+
+Set-ExecutionPolicy -Scope Process Bypass
+
+3. Install dependencies
+Application dependencies:
+
+pip install -r BackEnd\requirements.txt
+Optional test dependencies:
+
+pip install -r BackEnd\requirements-dev.txt
+
+4. Configure environment variables
+Create a .env file inside BackEnd using BackEnd/.env.example as a template.
+
+Required values:
+
+DATABASE_URL=mysql+pymysql://username:password@host:3306/database_name
+SECRET_KEY=replace-with-a-long-random-secret
+SPOTIFY_CLIENT_ID=your-spotify-client-id
+SPOTIFY_CLIENT_SECRET=your-spotify-client-secret
+
+
+5. Create database tables
+If the database is empty, run:
+
+cd BackEnd
+..\venv\Scripts\python.exe -c "from app import app; from models import db; app.app_context().push(); db.create_all(); print('tables created')"
+cd ..
+6. Run the application
+python BackEnd\app.py
+7. Open the app
+Go to:
+http://127.0.0.1:5000/
+
