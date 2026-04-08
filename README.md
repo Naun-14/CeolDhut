@@ -83,7 +83,7 @@ python BackEnd/app.py
 
 The app will be available at:
 
-- https://ceoldhut.onrender.com/(Will take time to load as the service we are hosting isnt free)
+- https://ceoldhut.onrender.com (Will take time to load as the service we are hosting isnt free)
 
 ## Deployment
 
